@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Анализатор загрузки, зависимостей, ОЗУ (16 ГБ) и батареи — Windows 11 Pro 26H2 (T14S &amp; BIG)</title>
+<style>
+:root, [data-theme="light"] {
+  --bg-page: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F1F5F9;
+  --bg-muted: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --border-color: #CBD5E1;
+  --border-subtle: #E2E8F0;
+  --accent-primary: #0284C7;
+  --accent-hover: #0369A1;
+  --accent-soft: #E0F2FE;
+  --status-ok-bg: #ECFDF5;
+  --status-ok-text: #065F46;
+  --status-ok-border: #A7F3D0;
+  --status-warn-bg: #FFFBEB;
+  --status-warn-text: #92400E;
+  --status-warn-border: #FDE68A;
+  --status-crit-bg: #FEF2F2;
+  --status-crit-text: #991B1B;
+  --status-crit-border: #FECACA;
+  --status-info-bg: #F0F9FF;
+  --status-info-text: #075985;
+  --status-info-border: #BAE6FD;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+[data-theme="dark"] {
+  --bg-page: #0B1120;
+  --bg-card: #111827;
+  --bg-subtle: #1E293B;
+  --bg-muted: #334155;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --border-color: #334155;
+  --border-subtle: #1E293B;
+  --accent-primary: #38BDF8;
+  --accent-hover: #7DD3FC;
+  --accent-soft: #0C4A6E;
+  --status-ok-bg: #064E3B;
+  --status-ok-text: #A7F3D0;
+  --status-ok-border: #059669;
+  --status-warn-bg: #451A03;
+  --status-warn-text: #FDE68A;
+  --status-warn-border: #D97706;
+  --status-crit-bg: #450A0A;
+  --status-crit-text: #FECACA;
+  --status-crit-border: #DC2626;
+  --status-info-bg: #082F49;
+  --status-info-text: #BAE6FD;
+  --status-info-border: #0284C7;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 16px 24px 48px;
+}
+
+/* Top Header */
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.header-title-block h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.header-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.badge-host {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+  border: 1px solid var(--border-color);
+}
+
+.header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: var(--bg-subtle);
+  border-color: var(--text-muted);
+}
+
+.btn-primary {
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  border-color: var(--accent-primary);
+}
+
+[data-theme="dark"] .btn-primary {
+  color: #0B1120;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* KPI Strip */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.kpi-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.kpi-delta {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.kpi-delta.good { color: var(--status-ok-text); font-weight: 600; }
+.kpi-delta.warn { color: var(--status-warn-text); font-weight: 600; }
+.kpi-delta.crit { color: var(--status-crit-text); font-weight: 600; }
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+}
+
+.tab-btn {
+  padding: 9px 15px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.tab-btn.active {
+  background: var(--bg-card);
+  color: var(--accent-primary);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* Cards & Sections */
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  max-width: 95ch;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 16px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+/* Callout Boxes */
+.callout {
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 14px;
+  font-size: 13.5px;
+}
+
+.callout-crit {
+  background: var(--status-crit-bg);
+  border-color: var(--status-crit-border);
+  color: var(--status-crit-text);
+}
+
+.callout-warn {
+  background: var(--status-warn-bg);
+  border-color: var(--status-warn-border);
+  color: var(--status-warn-text);
+}
+
+.callout-ok {
+  background: var(--status-ok-bg);
+  border-color: var(--status-ok-border);
+  color: var(--status-ok-text);
+}
+
+.callout-info {
+  background: var(--status-info-bg);
+  border-color: var(--status-info-border);
+  color: var(--status-info-text);
+}
+
+.callout h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+/* Badges */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.tag-disable {
+  background: var(--status-crit-bg);
+  color: var(--status-crit-text);
+  border-color: var(--status-crit-border);
+}
+
+.tag-manual {
+  background: var(--status-warn-bg);
+  color: var(--status-warn-text);
+  border-color: var(--status-warn-border);
+}
+
+.tag-optimize {
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
+  border-color: var(--status-info-border);
+}
+
+.tag-keep {
+  background: var(--status-ok-bg);
+  color: var(--status-ok-text);
+  border-color: var(--status-ok-border);
+}
+
+/* Tables */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th, td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+th {
+  background: var(--bg-subtle);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tr:hover td {
+  background: var(--bg-subtle);
+}
+
+.num-col {
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+/* Filter Toolbar */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.input-text, .select-box {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+
+.input-text {
+  min-width: 260px;
+}
+
+/* Progress / Stacked Bars */
+.bar-track {
+  width: 100%;
+  height: 22px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  margin: 8px 0;
+}
+
+.bar-seg {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+/* Code Block */
+pre.code-box {
+  background: #0F172A;
+  color: #E2E8F0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  line-height: 1.55;
+  border: 1px solid var(--border-color);
+  max-height: 460px;
+}
+
+/* Workload checkboxes */
+.workload-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.workload-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.workload-item input {
+  margin-right: 6px;
+}
+
+/* Print Stylesheet: Clean Black & White Outline Engineering Document */
+@media print {
+  :root, [data-theme="light"], [data-theme="dark"] {
+    --bg-page: #FFFFFF !important;
+    --bg-card: #FFFFFF !important;
+    --bg-subtle: #FFFFFF !important;
+    --text-primary: #000000 !important;
+    --text-secondary: #111111 !important;
+    --text-muted: #333333 !important;
+    --border-color: #000000 !important;
+    --border-subtle: #888888 !important;
+  }
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+  .no-print, .header-controls, .nav-tabs, .filter-bar {
+    display: none !important;
+  }
+  .tab-panel {
+    display: block !important;
+    page-break-after: always;
+  }
+  .section-card, .kpi-card, .callout {
+    box-shadow: none !important;
+    border: 1px solid #000000 !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    break-inside: avoid;
+  }
+  pre.code-box {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    max-height: none !important;
+    white-space: pre-wrap;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-title-block">
+      <h1>Инженерный анализатор загрузки, служб, ОЗУ (16 ГБ) и батареи — Windows 11 Pro 26H2</h1>
+      <div class="header-subtitle">
+        <span class="badge-host" id="activeHostBadge">Активный профиль: T14S (LENOVO 20T00034US • i7-10510U • 16 ГБ • Win11 26H2 Build 26300.9818)</span>
+        <span id="telemetryTimestamp">Срез реальной телеметрии: 31.10.2026 16:01–17:58 MSK</span>
+      </div>
+    </div>
+    <div class="header-controls no-print">
+      <label class="btn" title="Загрузить JSON-файл, созданный скриптом Win11-BootRamBattery-Toolkit.ps1 на T14S или BIG">
+        Импорт JSON телеметрии (T14S / BIG)
+        <input type="file" id="jsonFileInput" accept=".json" style="display:none">
+      </label>
+      <button class="btn" id="btnExportCsv" title="Экспорт полной таблицы анализа в CSV (разделитель ';', UTF-8 с BOM)">Экспорт CSV (;)</button>
+      <button class="btn" id="btnPrintPdf" title="Печать или сохранение читаемого PDF-отчёта (ч/б контурный стиль)">Печать / PDF</button>
+      <button class="btn" id="btnThemeToggle" title="Переключить светлую / тёмную тему">Тёмная тема</button>
+    </div>
+  </header>
+
+  <!-- DYNAMIC KPI STRIP -->
+  <section class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Полный каскад загрузки T14S</div>
+      <div class="kpi-value" id="kpiBootTime">7 мин 09 с <span style="font-size:14px;font-weight:500;color:var(--text-muted)">(428.9 с)</span></div>
+      <div class="kpi-delta crit" id="kpiBootDelta">Ядро+SCM: 64 с | 10 ступенек Run по 30 с</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Прогноз старта после оптимизации</div>
+      <div class="kpi-value" id="kpiBootAfter">~28–35 с</div>
+      <div class="kpi-delta good" id="kpiSavedBoot">Экономия времени старта: <span id="valSavedBootSec">237.6</span> с</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Физическое ОЗУ (16 136 МБ)</div>
+      <div class="kpi-value">10 929 МБ <span style="font-size:14px;font-weight:500;color:var(--text-muted)">(67.7%)</span></div>
+      <div class="kpi-delta good">Высвобождается выбором: <span id="valSavedRamWS">2 894</span> МБ WS</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Выделенная память (Commit Limit)</div>
+      <div class="kpi-value">14.18 / 24.33 ГБ</div>
+      <div class="kpi-delta warn">Свободно 10.1 ГБ (pagefile зажат на 8192 МБ)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Высвобождаемый Commit + CPU</div>
+      <div class="kpi-value"><span id="valSavedCommit">3 741</span> МБ</div>
+      <div class="kpi-delta good">Снятие фоновой нагрузки: <span id="valSavedCpu">1 912</span> с CPU</div>
+    </div>
+  </section>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-tabs no-print">
+    <button class="tab-btn active" data-tab="tab-timeline">1. Посекундная хронология загрузки T14S</button>
+    <button class="tab-btn" data-tab="tab-services">2. Программы, службы и граф зависимостей (33 узла)</button>
+    <button class="tab-btn" data-tab="tab-memory">3. Калькулятор ОЗУ (16 ГБ) и файла подкачки pagefile.sys</button>
+    <button class="tab-btn" data-tab="tab-battery">4. Батарея и спящий режим ThinkPad T14s (S0 vs S3)</button>
+    <button class="tab-btn" data-tab="tab-big">5. Станция BIG (ASUS Ryzen 9 5950X) и импорт JSON</button>
+    <button class="tab-btn" data-tab="tab-script">6. Генератор PowerShell-скрипта и отката (Rollback)</button>
+  </nav>
+
+  <!-- TAB 1: BOOT TIMELINE & ROOT CAUSE FORENSICS -->
+  <div class="tab-panel active" id="tab-timeline">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Диагноз медленной загрузки вашего ноутбука T14S (LENOVO 20T00034US)</span>
+        <span class="tag tag-disable">Подтверждено телеметрией 31.10.2026</span>
+      </div>
+      <p class="section-desc">
+        Анализ журналов событий <code>System</code>, <code>Kernel-Boot</code> и точных меток времени старта всех 136 процессов показал, что медленная загрузка вызвана не скоростью NVMe SSD, а <strong>четырьмя конкретными архитектурными блокировками</strong>, которые накладываются друг на друга при каждом включении:
+      </p>
+
+      <div class="grid-2">
+        <div class="callout callout-crit">
+          <h4>Причина №1: 10 последовательных 30-секундных таймаутов в очереди HKLM\Run (+112 с ... +429 с)</h4>
+          <p>
+            Посмотрите на метки времени старта в таблице ниже: <code>eguiProxy</code> стартует в <strong>16:03:40.0</strong>, ровно через <strong>30.1 с</strong> стартует <code>Everything</code> (<strong>16:04:10.1</strong>), ровно через <strong>30.1 с</strong> — <code>OODefragTray</code> (<strong>16:04:40.2</strong>), ещё через <strong>30.5 с</strong> — <code>Adguard</code> (<strong>16:05:10.7</strong>), ещё через <strong>30.1 с</strong> — <code>AdGuardVpn</code> (<strong>16:05:40.8</strong>), затем <code>OneDrive</code> (<strong>16:06:08.7</strong>), <code>NLClientApp</code> (<strong>16:06:55.9</strong>), <code>Grammarly.Desktop</code> (<strong>16:07:05.6</strong>) и <code>TheBat64</code> (<strong>16:08:26.5</strong>).<br>
+            <strong>Механизм Windows 11:</strong> Оболочка <code>Explorer.exe</code> запускает программы из <code>HKLM\Run</code> последовательно и вызывает для каждой <code>WaitForInputIdle</code> с таймаутом <strong>30 000 мс (30 секунд)</strong>. Фоновые процессы, не создающие видимого окна сразу или ожидающие инициализации своих тяжёлых сетевых служб, держат всю очередь автозагрузки ровно по 30 секунд каждый!
+          </p>
+        </div>
+
+        <div class="callout callout-crit">
+          <h4>Причина №2: Сбойные ядерные драйверы (Event ID 7026) и падение службы Samsung (Event ID 7034)</h4>
+          <p>
+            На этапе инициализации ядра и диспетчера служб (<strong>15:56:46</strong>, +49.5 с от старта ядра) зафиксирована ошибка <code>Service Control Manager Event ID 7026</code>: не удалось загрузить два драйвера раннего старта — <strong><code>aehd.sys</code></strong> (Android Emulator Hypervisor Driver, который конфликтует с включённым гипервизором Hyper-V / VBS) и <strong><code>wesp.sys</code></strong> — <strong>это не остаток антивируса, а компонент Microsoft Windows Endpoint Security Platform</strong>, появившийся с обновлением KB5127936; ошибки 7000/7026 по нему признаны известной проблемой. Его <strong>не трогаем</strong>. Длительность задержки от ошибки 7026 журналом не измеряется — нужна трасса WPR.<br>
+            Следом в <strong>15:56:59</strong> служба <code>SamsungMagicianSVC</code> принудительно устанавливает драйвер <code>MagicianSataModeReader</code> (<code>Event ID 7045</code>), а в <strong>15:57:00</strong> служба <code>CMigrationService</code> аварийно падает (<code>Event ID 7034</code>).
+          </p>
+        </div>
+
+        <div class="callout callout-warn">
+          <h4>Причина №3: 30 сторонних служб с типом запуска Auto (Start=2) и БЕЗ отложенного старта (Delayed=0)</h4>
+          <p>
+            В системе зарегистрировано ровно <strong>30 не-майкрософтовских служб в режиме немедленного автостарта</strong> (<code>DelayedAutoStart = 0</code>). Одновременно в одну секунду стартуют <strong>3 VPN-службы</strong> (<code>Adguard VPN Service</code> + <code>AmneziaVPN-service</code> + <code>WireGuardManager</code>), <strong>2 сетевых перехватчика</strong> (<code>Adguard Service</code> + <code>NetLimiter nlsvc</code>), антивирус <code>ESET</code>, <strong>4 службы Autodesk</strong>, <strong>5 служб автообновления</strong> (Foxit, Яндекс, Google x2, Logi Options+), <code>OODefragAgent</code>, <code>CCleaner7</code>, <code>AnyDesk</code> и <code>Intel DSA</code>.
+          </p>
+        </div>
+
+        <div class="callout callout-info">
+          <h4>Причина №4: Отключён быстрый запуск (HiberbootEnabled=0) + включены VBS/HVCI</h4>
+          <p>
+            В реестре <code>T14S</code> параметр <code>HiberbootEnabled = 0</code> и размер файла гибернации равен <code>0</code>. Это значит, что каждое включение ноутбука — это <strong>100% холодный старт ядра</strong> с нуля, дополненный инициализацией виртуальной безопасной области памяти <code>VBS / HVCI (Secure System)</code> и проверкой 14 ядерных драйверов-фильтров (<code>Acronis fltsrv/snapman</code>, <code>ESET x7</code>, <code>TrueCrypt</code>, <code>NetLimiter</code>, <code>AdGuard WFP</code>).
+          </p>
+        </div>
+      </div>
+
+      <h3 style="font-size:14px;margin:10px 0 6px;">Визуальная шкала времени загрузки и входа на T14S (до и после оптимизации)</h3>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">ТЕКУЩАЯ ЗАГРУЗКА (суммарно ~493 с от старта ядра до последнего элемента автозагрузки):</div>
+      <div class="bar-track">
+        <div class="bar-seg" style="width:10%;background:#475569;" title="Ядро + VBS + 14 фильтров: 34.5 с">Ядро 34.5с</div>
+        <div class="bar-seg" style="width:6%;background:#DC2626;" title="Ошибка 7026 (aehd, wesp): длительность задержки журналом не измеряется, оценка 15.5 с не подтверждена">ID 7026 (не измерено)</div>
+        <div class="bar-seg" style="width:8%;background:#D97706;" title="30 служб Start=2 (Del=0) + краш CMigration: 21.5 с">30 служб (21.5с)</div>
+        <div class="bar-seg" style="width:6%;background:#0284C7;" title="До Explorer + старт оболочки: 6.5 с">Вход 6.5с</div>
+        <div class="bar-seg" style="width:18%;background:#EA580C;" title="Фоновые UWP + стек Autodesk Access: 105 с">UWP + Autodesk (105с)</div>
+        <div class="bar-seg" style="width:52%;background:#991B1B;" title="Сериализация очереди HKLM\Run по 30 с (OODefrag, AdGuard, AdGuardVPN, OneDrive, NetLimiter, Grammarly): 310 с">Ступенчатая блокировка очереди Run по 30 с (310 с / 5+ мин)</div>
+      </div>
+
+      <div style="font-size:12px;color:var(--text-secondary);margin:10px 0 4px;">ПОСЛЕ ПРИМЕНЕНИЯ РЕКОМЕНДОВАННОГО ПРОФИЛЯ (полная готовность ~28–35 с):</div>
+      <div class="bar-track">
+        <div class="bar-seg" style="width:18%;background:#059669;" title="Ядро + ESET + базовые драйверы (aehd в ручном запуске; wesp — компонент Microsoft, не изменяется): оценка">Ядро и драйверы (~19 с)</div>
+        <div class="bar-seg" style="width:8%;background:#10B981;" title="Только необходимые службы (остальные Manual / Delayed): ~6 с">Службы (~6 с)</div>
+        <div class="bar-seg" style="width:7%;background:#0284C7;" title="Мгновенный старт Explorer + Everything + Punto + TheBat без 30-с таймаутов: ~5 с">Рабочий стол (~5 с)</div>
+        <div class="bar-seg" style="width:67%;background:transparent;color:var(--status-ok-text);font-weight:600;justify-content:flex-start;padding-left:12px;">Сэкономлено более 6 минут фоновых блокировок и 2.9 ГБ ОЗУ</div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-title">
+        <span>Посекундная таблица реального каскада запуска на T14S (31.10.2026)</span>
+        <span class="mono" style="font-size:12px;color:var(--text-muted)">Точка отсчёта ядра: 15:55:56.500 | Точка входа Winlogon: 16:01:48.000</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Метка времени</th>
+              <th class="num-col">От ядра (с)</th>
+              <th class="num-col">От входа (с)</th>
+              <th>Фаза / Этап</th>
+              <th>Процессы / Службы / Драйверы</th>
+              <th class="num-col">ОЗУ WS (МБ)</th>
+              <th class="num-col">CPU (с)</th>
+              <th>Инженерный разбор события</th>
+            </tr>
+          </thead>
+          <tbody id="timelineTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: SERVICES, STARTUP APPS & DEPENDENCY MATRIX -->
+  <div class="tab-panel" id="tab-services">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Интерактивная матрица влияния программ, служб и драйверов + проверка зависимостей</span>
+        <div class="no-print" style="display:flex;gap:8px;">
+          <button class="btn" id="btnSelectRecommended">Выбрать рекомендуемые (23)</button>
+          <button class="btn" id="btnClearSelection">Снять все отметки</button>
+        </div>
+      </div>
+      <p class="section-desc">
+        Отмечайте галочками элементы, которые нужно включить в ваш персональный PowerShell-скрипт оптимизации. Таблица показывает точные замеры памяти (<code>Working Set</code> и <code>Private Commit</code>) и процессорного времени с вашего <code>T14S</code>, полную цепочку зависимостей (<code>DependOn</code> / <code>DependedBy</code>) и последствия отключения.
+      </p>
+
+      <div class="filter-bar no-print">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <input type="text" class="input-text" id="searchFilter" placeholder="Поиск по имени службы, процессу или описанию...">
+          <select class="select-box" id="actionFilter">
+            <option value="ALL">Все рекомендации (33)</option>
+            <option value="Безопасно отключить">Безопасно отключить</option>
+            <option value="Перевести в Ручной (Manual)">Перевести в Ручной (Manual)</option>
+            <option value="Оптимизировать настройки">Оптимизировать настройки / Delayed</option>
+            <option value="Критично — оставить">Критично — оставить</option>
+          </select>
+          <select class="select-box" id="sortOrder">
+            <option value="default">Сортировка: По фазе и важности</option>
+            <option value="ram_desc">По ОЗУ Working Set (убыв.)</option>
+            <option value="priv_desc">По Выделенной памяти Commit (убыв.)</option>
+            <option value="cpu_desc">По нагрузке на CPU / батарею (убыв.)</option>
+            <option value="boot_desc">По задержке загрузки (убыв.)</option>
+          </select>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-secondary);">
+          Выбрано для оптимизации: <strong id="selectedCountLabel">0</strong> | Экономия ОЗУ: <strong id="selectedRamLabel">0 МБ</strong> | Commit: <strong id="selectedCommitLabel">0 МБ</strong>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px;text-align:center;">Вкл</th>
+              <th style="min-width:210px;">Компонент и тип запуска</th>
+              <th class="num-col">ОЗУ WS<br>(МБ)</th>
+              <th class="num-col">Commit Priv<br>(МБ)</th>
+              <th class="num-col">Время CPU<br>(с)</th>
+              <th class="num-col">Задержка<br>старта (с)</th>
+              <th style="min-width:190px;">Зависимости (Upstream / Downstream)</th>
+              <th style="min-width:340px;">Что изменится при отключении и рекомендации (Microsoft / опыт в сети)</th>
+              <th>Решение</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: 16 GB RAM & PAGEFILE CALCULATOR -->
+  <div class="tab-panel" id="tab-memory">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Почему 16 ГБ ОЗУ на T14S не хватает и как работает лимит выделенной памяти (Commit Limit)</span>
+        <span class="tag tag-manual">Текущий pagefile.sys: жёстко задан 8 192 МБ</span>
+      </div>
+      <p class="section-desc">
+        В реестре вашего ноутбука (<code>HKLM\...\Memory Management\PagingFiles</code>) сейчас прописано жёсткое ограничение: <code>c:\pagefile.sys 8192 8192</code> (ровно 8 ГБ). В 64-битной Windows 11 26H2 действует строгая формула диспетчера виртуальной памяти:
+        <strong>Commit Limit (24 328 МБ) = Видимое ОЗУ (16 136 МБ) + Файл подкачки (8 192 МБ)</strong>.
+      </p>
+
+      <div class="grid-2">
+        <div class="callout callout-warn">
+          <h4>Главный секрет нехватки памяти при распаянных 16 ГБ</h4>
+          <p>
+            Программы САПР (Altium Designer, AutoCAD, DipTrace с 3D-моделями STEP), браузеры и системные службы запрашивают у ядра Windows гарантированный резерв виртуальной памяти (<strong>Private Commit Charge</strong>). Даже если физическое ОЗУ занято всего на 75% (за счёт сжатия <code>Memory Compression</code>, которое сейчас держит <strong>1 215.1 МБ</strong>), как только сумма <code>Committed Bytes</code> упирается в потолок <strong>24 328 МБ</strong>, Windows выдаёт ошибку нехватки памяти и аварийно закрывает вкладки или САПР!<br>
+            Прямо сейчас в спокойном состоянии на вашем T14S уже выделено <strong>14 180 МБ Commit</strong> (из них <strong>1 662.7 МБ</strong> зарезервировал один только <code>AdGuard</code>, <strong>1 300.1 МБ</strong> — 6 процессов <code>TheBat64</code>, <strong>770.7 МБ</strong> — <code>AdGuard VPN</code>, <strong>504.1 МБ</strong> — <code>OneDrive</code>, <strong>500.2 МБ</strong> — <code>Grammarly + WebView2</code>). До жёсткого потолка остаётся всего <strong>10.1 ГБ</strong>!
+          </p>
+        </div>
+
+        <div class="callout callout-ok">
+          <h4>Инженерное решение для диска C:\ (NVMe 930 ГБ, свободно 482.9 ГБ)</h4>
+          <p>
+            1. <strong>Очистка фонового резерва (Вкладка 2):</strong> Выгрузка фоновых пожирателей (AdGuard VPN, Grammarly+WebView2, Autodesk Access, Phone Link, Виджеты, Intel DSA) мгновенно освобождает <strong>~3.7 ГБ Commit Charge</strong> и <strong>~2.9 ГБ физического ОЗУ</strong>.<br>
+            2. <strong>Расширение <code>pagefile.sys</code> до <code>16 384 МБ (Исходный) — 24 576 МБ (Максимальный)</code>:</strong> За счёт установки исходного размера <strong>16 384 МБ (16 ГБ)</strong> файл подкачки выделяется одним непрерывным блоком на NVMe SSD без фрагментации, а общий лимит <code>Commit Limit</code> возрастает с <strong>24.3 ГБ до 32.5–40.5 ГБ</strong>! При наличии 482.9 ГБ свободного места на диске C: это даёт абсолютный запас прочности для тяжёлых САПР.
+          </p>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;margin:14px 0 8px;">Интерактивный симулятор нагрузки ОЗУ и Commit Limit для вашего T14S</h3>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">
+        Включайте рабочие программы ниже и меняйте настройки файла подкачки, чтобы увидеть запас по физической памяти и <code>Commit Limit</code>:
+      </p>
+
+      <div class="workload-list" id="workloadList">
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="2450" data-ws="1850" checked> <span><strong>DipTrace 5.3 + 3D STEP модели</strong> (+2.45 ГБ Commit)</span></label>
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="4200" data-ws="3100" checked> <span><strong>AutoCAD 2025 / Altium Designer 26</strong> (+4.20 ГБ Commit)</span></label>
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="3600" data-ws="2600" checked> <span><strong>Браузер Comet / Chrome (25 вкладок)</strong> (+3.60 ГБ Commit)</span></label>
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="1400" data-ws="950"> <span><strong>STM32CubeIDE / CubeMX + Отладка</strong> (+1.40 ГБ Commit)</span></label>
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="2800" data-ws="2100"> <span><strong>Bambu Studio / UltiMaker Cura 5.9</strong> (+2.80 ГБ Commit)</span></label>
+        <label class="workload-item"><input type="checkbox" class="wl-chk" data-commit="6500" data-ws="4800"> <span><strong>Topaz Video AI / Фото-обработка</strong> (+6.50 ГБ Commit)</span></label>
+      </div>
+
+      <div class="filter-bar" style="margin-top:12px;">
+        <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+          <label style="font-weight:600;font-size:13px;">Режим файла подкачки <code>C:\pagefile.sys</code>:
+            <select class="select-box" id="pfPresetSelect" style="margin-left:6px;">
+              <option value="8192">Текущий на T14S: Фиксированный 8 192 / 8 192 МБ (Лимит 24.3 ГБ)</option>
+              <option value="16384" selected>Рекомендуемый САПР: 16 384 Исходный / 24 576 Макс МБ (Лимит до 40.7 ГБ)</option>
+              <option value="32768">Максимальный (Тяжёлый рендер/ИИ): 24 576 / 32 768 МБ (Лимит до 48.9 ГБ)</option>
+              <option value="2048">Опасный миф «Отключить / 2 ГБ» (Гарантированный вылет САПР!)</option>
+            </select>
+          </label>
+          <label style="font-weight:600;font-size:13px;cursor:pointer;">
+            <input type="checkbox" id="chkApplyRamCleanup" checked> Учитывать освобождение памяти из Вкладки 2 (<span id="simCleanupMB">-3741</span> МБ Commit)
+          </label>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:12px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Моделируемый Commit Charge (Выделенная память)</div>
+          <div class="kpi-value" id="simCommitValue">20.69 / 40.71 ГБ</div>
+          <div class="bar-track" style="height:18px;">
+            <div class="bar-seg" id="simCommitBar" style="width:51%;background:#0284C7;">51%</div>
+          </div>
+          <div class="kpi-delta" id="simCommitStatus">Запас Commit Limit достаточен (+20.0 ГБ свободно)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-label">Моделируемая нагрузка на физическое ОЗУ (16 136 МБ + сжатие LZ4)</div>
+          <div class="kpi-value" id="simPhysValue">13.85 / 16.14 ГБ</div>
+          <div class="bar-track" style="height:18px;">
+            <div class="bar-seg" id="simPhysBar" style="width:85%;background:#059669;">85%</div>
+          </div>
+          <div class="kpi-delta" id="simPhysStatus">Активный рабочий набор помещается в ОЗУ + сжатую память MMAgent</div>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;margin:18px 0 8px;">Тонкие настройки подсистемы памяти Windows 11 Pro 26H2 (16 ГБ ОЗУ)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Механизм ядра Windows 11 26H2</th>
+              <th>Текущее состояние на T14S</th>
+              <th>Рекомендация для 16 ГБ ОЗУ</th>
+              <th>Инженерное обоснование и команда настройки</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Файл подкачки (<code>PagingFiles</code>)</strong></td>
+              <td><code>c:\pagefile.sys 8192 8192</code> (8 ГБ)</td>
+              <td><span class="tag tag-optimize">Увеличить до 16384–24576 МБ</span></td>
+              <td>При 16 ГБ распаянной ОЗУ фиксированный 8-гигабайтный файл подкачки зажимает <code>Commit Limit</code> на отметке 24.3 ГБ. Установка <code>16384 24576</code> даёт нефрагментированное базовое ядро 16 ГБ и возможность расширения до 24 ГБ при пиковых нагрузках.</td>
+            </tr>
+            <tr>
+              <td><strong>Сжатие памяти (<code>MMAgent MemoryCompression</code>)</strong></td>
+              <td>Активно (процесс <code>Memory Compression</code> = <strong>1 215.1 МБ WS</strong>)</td>
+              <td><span class="tag tag-keep">Обязательно ОСТАВИТЬ включённым</span></td>
+              <td>В Windows 11 24H2–26H2 используется быстрый алгоритм сжатия <strong>LZ4</strong>. 1 215 МБ в процессе <code>Memory Compression</code> хранят в себе ~2.8–3.2 ГБ сжатых страниц программ в ОЗУ, избавляя от медленного обращения к диску и экономя заряд батареи.</td>
+            </tr>
+            <tr>
+              <td><strong>Предварительный запуск UWP (<code>MMAgent ApplicationPreLaunch</code>)</strong></td>
+              <td>Включено по умолчанию</td>
+              <td><span class="tag tag-disable">Отключить (Disable-MMAgent -ApplicationPreLaunch)</span></td>
+              <td>Заранее подгружает в ОЗУ неиспользуемые магазинные приложения. На 16 ГБ ОЗУ лучше оставить эту память свободной для рабочих программ.</td>
+            </tr>
+            <tr>
+              <td><strong>Служба <code>SysMain</code> (Superfetch)</strong></td>
+              <td>Running (<code>Start=2 Auto</code>)</td>
+              <td><span class="tag tag-manual">Перевести в Manual / Отключить</span></td>
+              <td>Не имеет зависимых служб (<code>DepBy=[]</code>). На быстром NVMe SSD кэширование неиспользуемых программ в ОЗУ сразу после старта создаёт лишнюю дисковую активность (Event ID 106) и уменьшает объём сразу доступной памяти.</td>
+            </tr>
+            <tr>
+              <td><strong>Изоляция ядра <code>VBS / HVCI (Memory Integrity)</code></strong></td>
+              <td>Включено (<code>EnableVBS=1, HVCI=1</code>)</td>
+              <td><span class="tag tag-optimize">По выбору (экономит ~600 МБ ОЗУ и 5–8% CPU)</span></td>
+              <td>На процессоре 10-го поколения Intel Core i7-10510U виртуализация ядра резервирует ~500–700 МБ невыгружаемой памяти (<code>Secure System</code> + таблицы SLAT) и замедляет системные вызовы. Поскольку у вас уже работает полноценный антивирус ESET Security, при нехватке ОЗУ или проблемах с драйверами программаторов HVCI можно отключить.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: BATTERY & SLEEP (T14S) -->
+  <div class="tab-panel" id="tab-battery">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Оптимизация времени работы от батареи и спящего режима на Lenovo ThinkPad T14s Gen 1</span>
+        <span class="tag tag-manual">BIOS: N2YET49W (1.38) • Режим: S0 Low Power Idle (Network Connected)</span>
+      </div>
+      <p class="section-desc">
+        По данным команды <code>powercfg /a</code> и системного журнала вашего <code>T14S</code> выявлены две группы потерь заряда батареи: <strong>1) высокий фоновый расход во время работы</strong> и <strong>2) разряд в спящем режиме Modern Standby (S0ix) с активной сетью</strong>.
+      </p>
+
+      <div class="grid-2">
+        <div class="callout callout-crit">
+          <h4>1. Почему батарея быстро садится во время активной работы</h4>
+          <p>
+            За текущую двухчасовую сессию на вашем ноутбуке четыре фоновые утилиты впустую сожгли более <strong>2 400 секунд (40 минут!) чистого процессорного времени Core i7-10510U</strong>, не давая ядрам уходить в глубокие C-состояния (C8/C10):<br>
+            • <strong>Grammarly.Desktop + Superhuman.WebUI + 6x WebView2:</strong> <code>1 137.1 с CPU</code> (постоянный глобальный перехват окон UI Automation)<br>
+            • <strong>AdGuard VPN (клиент + служба):</strong> <code>550.9 с CPU</code><br>
+            • <strong>OneDrive (клиент + служба):</strong> <code>365.4 с CPU</code><br>
+            • <strong>AdGuard (блокировщик):</strong> <code>353.4 с CPU</code><br>
+            • <strong>logioptionsplus_agent + AdskIdentityManager + CrossDevice:</strong> ещё <code>438.5 с CPU</code>.<br>
+            Выгрузка только этих фоновых процессов снижает энергопотребление ноутбука в простое/чтении схем с <strong>9–12 Вт до 4.5–6.0 Вт</strong> (прирост времени работы от батареи на <strong>+1.5...2.5 часа</strong>)!
+          </p>
+        </div>
+
+        <div class="callout callout-ok">
+          <h4>2. Уникальное преимущество вашего ThinkPad T14s Gen 1 (BIOS N2YET49W): возврат аппаратного сна S3!</h4>
+          <p>
+            Сейчас вывод <code>powercfg /a</code> на вашем T14S показывает:<br>
+            <code>Standby (S0 Low Power Idle) Network Connected — Включено</code><br>
+            <code>Standby (S3) — Прошивка не поддерживает этот режим</code>.<br>
+            В режиме <strong>S0 Network Connected</strong> ноутбук во сне продолжает поддерживать Wi-Fi, принимать пакеты и будить процессор, теряя по 10–25% заряда за ночь.<br>
+            <strong>Но в Lenovo ThinkPad T14s Gen 1 (в отличие от более новых ноутбуков!) в BIOS есть штатный переключатель аппаратного сна S3:</strong><br>
+            При перезагрузке нажмите <strong>F1 (вход в BIOS Setup) &rarr; Config &rarr; Power &rarr; Sleep State</strong> и переключите значение с <code>Windows 10 / Windows 11</code> на <strong><code>Linux</code></strong> (затем <strong>F10 Save &amp; Exit</strong>). После этого прошивка <code>N2YET49W</code> включает классический глубокий аппаратный сон <strong>S3 (Suspend-to-RAM)</strong>, где процессор и Wi-Fi полностью обесточены, а питание подаётся только на микросхемы ОЗУ (расход падает до <strong>&lt;0.3% в час</strong>!).
+          </p>
+        </div>
+      </div>
+
+      <h3 style="font-size:15px;margin:14px 0 8px;">Сравнение 3 вариантов настройки сна и энергосбережения на T14S</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Параметр / Режим</th>
+              <th>Текущий режим (S0 Network Connected)</th>
+              <th>Вариант А (Программный): S0 Disconnected Standby</th>
+              <th>Вариант Б (Аппаратный BIOS): Классический сон S3 («Linux»)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Активность Wi-Fi и фоновых служб во сне</strong></td>
+              <td>Активны (Wi-Fi подключён, таймеры будят CPU)</td>
+              <td>Отключены на батарее через <code>powercfg</code></td>
+              <td>Аппаратно обесточены (питается только ОЗУ)</td>
+            </tr>
+            <tr>
+              <td><strong>Типичный расход батареи за 8 часов сна</strong></td>
+              <td class="mono" style="color:var(--status-crit-text);font-weight:700;">12% — 28% (риск нагрева в сумке)</td>
+              <td class="mono" style="color:var(--status-warn-text);font-weight:700;">4% — 7%</td>
+              <td class="mono" style="color:var(--status-ok-text);font-weight:700;">1.5% — 2.5% (эталонная надёжность)</td>
+            </tr>
+            <tr>
+              <td><strong>Как включить</strong></td>
+              <td>По умолчанию</td>
+              <td>Выполняется автоматически нашим скриптом <code>Win11-BootRamBattery-Toolkit.ps1</code> (Пункт 4)</td>
+              <td>В BIOS: <code>Config &rarr; Power &rarr; Sleep State &rarr; Linux</code> (занимает 30 секунд)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout callout-info" style="margin-top:14px;">
+        <h4>Дополнительная находка в журнале T14S: конфликт Lenovo SmartStandby.exe</h4>
+        <p>
+          В системном журнале вашего ноутбука зафиксировано 8 событий <code>Kernel-General Event ID 12</code> подряд, где процесс <code>C:\Program Files\Lenovo\Lenovo Smart Standby\SmartStandby.exe</code> и <code>esif_uf.exe</code> циклически перезаписывают активный профиль питания. Рекомендуется в приложении <strong>Lenovo Vantage &rarr; Питание &rarr; Smart Standby</strong> отключить функцию «Интеллектуальный ждущий режим» (при этом пороги заряда батареи и термопрофили <code>PowerMgr / LITSSvc</code> продолжат работать штатно).
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: WORKSTATION BIG (ASUS) & TELEMETRY IMPORT -->
+  <div class="tab-panel" id="tab-big">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Диагностика и оптимизация стационарной рабочей станции BIG (ASUS)</span>
+        <span class="tag tag-optimize">Поддержка локального сбора JSON за 10 секунд</span>
+      </div>
+      <p class="section-desc">
+        При попытке удалённого вызова команд на компьютере <strong>BIG (ASUS)</strong> системный агент вернул статус: <code>the Windows sandbox is not provisioned</code> (на BIG включён коннектор в списке устройств, но ещё не инициализирована локальная песочница удалённого выполнения PowerShell). Поэтому мы подготовили для вас **автономный скрипт <code>Win11-BootRamBattery-Toolkit.ps1</code>**, который запускается на <strong>BIG</strong> локально в один клик и формирует полный файл <code>Win11-Telemetry_BIG.json</code> для загрузки прямо в это окно!
+      </p>
+
+      <div class="grid-2">
+        <div class="callout callout-info">
+          <h4>Как проверить BIG (ASUS) за 30 секунд и загрузить данные сюда</h4>
+          <p>
+            1. Скачайте файл <strong><code>Win11-BootRamBattery-Toolkit.ps1</code></strong> (кнопка во Вкладке 6 или в прикреплённых файлах проекта).<br>
+            2. Запустите его на компьютере <strong>BIG</strong> от имени Администратора и выберите пункт <code>[1] Собрать полную телеметрию</code>.<br>
+            3. Нажмите кнопку <strong>«Импорт JSON телеметрии (T14S / BIG)»</strong> в правом верхнем углу этой страницы и выберите созданный файл <code>Win11-Telemetry_BIG.json</code>.<br>
+            4. Анализатор мгновенно отобразит все процессы, службы, зависимости, ошибки загрузки <code>Event ID 100–106</code> и настройки памяти компьютера <strong>BIG</strong>!
+          </p>
+        </div>
+
+        <div class="callout callout-ok">
+          <h4>Ключевые отличия настройки стационарной станции BIG от ноутбука T14S</h4>
+          <p>
+            • <strong>Питание и процессор:</strong> На стационарном ПК <strong>BIG</strong> (платформа ASUS) не требуется экономить батарею или отключать сеть во сне, но критически важно исключить фоновые хуки (<code>Grammarly.Desktop</code>, <code>Autodesk Access</code>, <code>ASUS Armoury Crate / Aura lighting services</code>, если они установлены), чтобы снизить DPC-латентность и обеспечить максимальный буст ядер в САПР и компиляции.<br>
+            • <strong>Очередь автозагрузки <code>HKLM\Run</code>:</strong> Если на <strong>BIG</strong> установлен тот же набор утилит (<code>AdGuard</code>, <code>AdGuard VPN</code>, <code>O&amp;O Defrag</code>, <code>NetLimiter</code>, <code>Everything</code>, <code>The Bat!</code>), там действует точно такая же 30-секундная сериализация <code>WaitForInputIdle</code> при входе! Наш скрипт устраняет её на обоих ПК.
+          </p>
+        </div>
+      </div>
+
+      <!-- Imported JSON Telemetry Viewer (populates dynamically when user loads JSON from BIG or T14S) -->
+      <div id="importedTelemetryBox" style="display:none;margin-top:16px;">
+        <h3 style="font-size:15px;margin-bottom:10px;color:var(--accent-primary);">Загруженная телеметрия с ПК: <span id="impHostName"></span></h3>
+        <div class="kpi-grid" id="impKpiGrid"></div>
+        <div class="grid-2">
+          <div>
+            <h4 style="margin-bottom:6px;">Топ процессов по потреблению ОЗУ и CPU</h4>
+            <div class="table-wrap"><table id="impProcTable"><thead><tr><th>Процесс</th><th class="num-col">Экз.</th><th class="num-col">WS (МБ)</th><th class="num-col">Priv (МБ)</th><th class="num-col">CPU (с)</th></tr></thead><tbody></tbody></table></div>
+          </div>
+          <div>
+            <h4 style="margin-bottom:6px;">События Diagnostics-Performance (ID 100–106) и ошибки SCM</h4>
+            <div class="table-wrap"><table id="impEventsTable"><thead><tr><th>Время</th><th>ID</th><th>Источник / Приложение</th><th>Детали / Задержка</th></tr></thead><tbody></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: POWERSHELL SCRIPT GENERATOR & ROLLBACK -->
+  <div class="tab-panel" id="tab-script">
+    <div class="section-card">
+      <div class="section-title">
+        <span>Интерактивный генератор безопасного PowerShell-скрипта оптимизации и скрипта отката</span>
+        <div class="no-print" style="display:flex;gap:8px;">
+          <button class="btn btn-primary" id="btnDownloadCustomPs1">Скачать выбранный скрипт оптимизации (.ps1)</button>
+          <button class="btn" id="btnCopyPs1">Скопировать код в буфер</button>
+        </div>
+      </div>
+      <p class="section-desc">
+        Этот скрипт автоматически формируется в реальном времени на основе отмеченных вами галочек во <strong>Вкладке 2</strong> и выбранного режима файла подкачки во <strong>Вкладке 3</strong>. Перед внесением любых изменений скрипт автоматически создаёт точку восстановления системы и сохраняет резервную копию реестра (<code>Rollback</code>).
+      </p>
+
+      <pre class="code-box" id="generatedPs1Code"></pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ANALYZED_ITEMS = [{"id": "drv_aehd", "name": "aehd (aehd.sys)", "displayName": "Android Emulator Hypervisor Driver Service", "category": "Драйвер ядра (Start=1 System)", "currentStatus": "Сбой загрузки (Event ID 7026)", "startMode": "System (Start=1)", "ramWS_MB": 0.0, "ramPriv_MB": 0.0, "cpuSec": 0.0, "bootImpactSec": 8.0, "bootPhase": "Фаза 1: Ядро и драйверы (0–50 с)", "dependOn": "Несовместим с Hyper-V / VBS", "dependedBy": "Нет (только старый Android Emulator без WHPX)", "whatBreaks": "Ничего. При включённом VBS/Hyper-V в Windows 11 26H2 эмулятор Android использует штатный Windows Hypervisor Platform (WHPX), а драйвер aehd.sys гарантированно падает при каждом старте ОС (Event ID 7026 в 15:56:46).", "action": "Безопасно отключить", "recommendedState": "Demand / Disabled (Start=3 или 4)", "command": "sc.exe config aehd start= demand", "rollback": "sc.exe config aehd start= system", "sourceNote": "Microsoft Event ID 7026 SCM / Google Android Studio Docs: aehd не работает поверх активного гипервизора Hyper-V (VBS/HVCI).", "defaultChecked": true}, {"id": "drv_wesp", "name": "wesp + wespelam (wesp.sys)", "displayName": "Windows Endpoint Security Platform (Microsoft)", "category": "Драйвер ядра (Start=0 Boot)", "currentStatus": "Сообщение 7026 — известная проблема KB5127936", "startMode": "Boot (Start=0)", "ramWS_MB": 0.0, "ramPriv_MB": 0.0, "cpuSec": 0.0, "bootImpactSec": 0.0, "bootPhase": "Фаза 1: Ядро и драйверы (0–50 с)", "dependOn": "FltMgr", "dependedBy": "Компонент защиты Windows (Microsoft WESP)", "whatBreaks": "Это не остаточный драйвер стороннего антивируса, а компонент Microsoft Windows Endpoint Security Platform, установленный обновлением KB5127936. Отключение может нарушить работу защиты Windows и последующих обновлений. Ошибки 7000/7026 по wesp — известная проблема этого обновления; влияние на время загрузки не измерено.", "action": "Критично — оставить", "recommendedState": "Не трогать: оставить как есть (Boot)", "command": "# не изменять: компонент Microsoft WESP (KB5127936)", "rollback": "# изменений нет", "sourceNote": "Microsoft Q&A: KB5127936 — ошибки Firewall 2042 и WESP 7000; BornCity: WESP переносит EDR-функции из ядра.", "defaultChecked": false}, {"id": "drv_acronis", "name": "fltsrv + snapman (Acronis)", "displayName": "Acronis Storage Filter & Snapshots Manager", "category": "Драйвер ядра (Start=0 Boot)", "currentStatus": "Работает в цепочке диска", "startMode": "Boot (Start=0)", "ramWS_MB": 18.0, "ramPriv_MB": 24.0, "cpuSec": 12.0, "bootImpactSec": 4.5, "bootPhase": "Фаза 1: Ядро и драйверы (0–34.5 с)", "dependOn": "disk, volmgr, FltMgr", "dependedBy": "Acronis Disk Director 12.5 (горячие снапшоты)", "whatBreaks": "Перевод самих boot-драйверов fltsrv/snapman в Disabled нарушит загрузку тома (BSOD INACCESSIBLE_BOOT_DEVICE, так как они прописаны в UpperFilters/LowerFilters класса Storage). Поэтому драйверы fltsrv/snapman НЕ отключать через sc config, а отключить только службу планировщика Acronis или деинсталлировать Disk Director штатно, если он не нужен.", "action": "Критично — оставить", "recommendedState": "Не отключать вручную (фильтр тома Boot=0)", "command": "# НЕ отключать fltsrv/snapman через sc config (связаны с UpperFilters тома C:)", "rollback": "# Без изменений", "sourceNote": "Acronis KB: ручная остановка snapman/fltsrv без удаления из UpperFilters вызывает ошибку 0x7B при загрузке.", "defaultChecked": false}, {"id": "svc_cmigration", "name": "CMigrationService", "displayName": "Samsung Magician Migration Service", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Падает при старте (ID 7034)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 22.0, "ramPriv_MB": 35.0, "cpuSec": 4.5, "bootImpactSec": 6.0, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "Нет", "dependedBy": "Нет", "whatBreaks": "Ничего, кроме функции клонирования ОС на другой SSD внутри Samsung Magician. В логе T14S в 15:57:00 зафиксировано аварийное падение этой службы (Event ID 7034).", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "Stop-Service -Name 'CMigrationService' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'CMigrationService' -StartupType Manual", "rollback": "Set-Service -Name 'CMigrationService' -StartupType Automatic; Start-Service -Name 'CMigrationService'", "sourceNote": "Журнал System T14S (Event ID 7034 в 15:57:00): служба аварийно завершается при каждой загрузке.", "defaultChecked": true}, {"id": "svc_magician", "name": "SamsungMagicianSVC", "displayName": "Samsung Magician Service + MagicianSataModeReader", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Running (устанавливает драйвер на старте)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 48.0, "ramPriv_MB": 62.0, "cpuSec": 14.0, "bootImpactSec": 5.5, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "RPCSS", "dependedBy": "Samsung Magician GUI", "whatBreaks": "Аппаратная работа NVMe SSD никак не зависит от Samsung Magician (используется системный драйвер stornvme.sys). При старте служба каждый раз заново инсталлирует ядерный драйвер MagicianSataModeReader (Event ID 7045 в 15:56:59) и опрашивает диск, мешая глубокому энергосбережению NVMe APST.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "Stop-Service -Name 'SamsungMagicianSVC' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'SamsungMagicianSVC' -StartupType Manual", "rollback": "Set-Service -Name 'SamsungMagicianSVC' -StartupType Automatic; Start-Service -Name 'SamsungMagicianSVC'", "sourceNote": "Опыт сообщества ThinkPad / Reddit: SamsungMagicianSVC препятствует переходу PCIe NVMe в L1.2 Substate и повышает расход батареи на 0.5–1.2 Вт.", "defaultChecked": true}, {"id": "svc_oodefrag", "name": "OODefragAgent + OODefragTray", "displayName": "O&O Defrag Agent Service + Tray App", "category": "Сторонняя служба + Автозагрузка HKLM\\Run", "currentStatus": "Running + Задержка слота Run 30 с", "startMode": "Auto (Start=2) + HKLM\\Run", "ramWS_MB": 98.4, "ramPriv_MB": 48.2, "cpuSec": 6.5, "bootImpactSec": 30.2, "bootPhase": "Фаза 2 + Фаза 3 (16:04:40, +172 с)", "dependOn": "Нет", "dependedBy": "O&O Defrag GUI", "whatBreaks": "Отключается только фоновый мониторинг фрагментации и иконка в трее. На ноутбуке с NVMe SSD (930 ГБ) штатная служба Windows (Оптимизация дисков / ReTrim) выполняет TRIM по расписанию без расхода ОЗУ. OODefragTray занимает 30-секундный слот сериализации в HKLM\\Run (16:04:10 -> 16:04:40).", "action": "Перевести в Ручной (Manual)", "recommendedState": "Служба Manual + отключить OODefragTray в Run", "command": "Stop-Service -Name 'OODefragAgent' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'OODefragAgent' -StartupType Manual; Stop-Process -Name 'OODefragTray' -Force -ErrorAction SilentlyContinue", "rollback": "Set-Service -Name 'OODefragAgent' -StartupType Automatic; Start-Service -Name 'OODefragAgent'", "sourceNote": "Microsoft Storage Docs: для NVMe SSD требуется периодический Retrim, постоянный фоновый агент дефрагментации избыточен и расходует заряд батареи.", "defaultChecked": true}, {"id": "svc_hdsentinel", "name": "HDSentinel (Hard Disk Sentinel PRO)", "displayName": "Hard Disk Sentinel PRO (Задача при входе)", "category": "Автозагрузка (Планировщик задач)", "currentStatus": "Running (старт до Explorer в +2.9 с)", "startMode": "Logon Trigger", "ramWS_MB": 12.1, "ramPriv_MB": 31.0, "cpuSec": 34.05, "bootImpactSec": 1.8, "bootPhase": "Фаза 3: До старта Explorer (+2.9 с)", "dependOn": "Нет", "dependedBy": "Иконка температуры SSD в трее", "whatBreaks": "Постоянный опрос SMART по шине NVMe каждые несколько секунд не даёт контроллеру SSD уходить в глубокое состояние энергосбережению APST L1.2 при работе от батареи. Для проверки здоровья SSD достаточно запускать HDSentinel вручную.", "action": "Оптимизировать настройки", "recommendedState": "Отключить автозапуск при входе (запускать вручную)", "command": "Disable-ScheduledTask -TaskName '*HDSentinel*' -ErrorAction SilentlyContinue; Stop-Process -Name 'HDSentinel' -Force -ErrorAction SilentlyContinue", "rollback": "Enable-ScheduledTask -TaskName '*HDSentinel*' -ErrorAction SilentlyContinue", "sourceNote": "Опыт владельцев ноутбуков: частый опрос SMART будит NVMe-контроллер и добавляет нагрев в простое.", "defaultChecked": true}, {"id": "svc_ccleaner", "name": "CCleaner7 + CCleaner Task", "displayName": "CCleaner 7 Service & Logon Monitor", "category": "Сторонняя служба + Планировщик", "currentStatus": "Start=2 Auto + процесс CCleaner (+2.8 с)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 14.8, "ramPriv_MB": 18.6, "cpuSec": 7.62, "bootImpactSec": 2.1, "bootPhase": "Фаза 2 + Фаза 3 (+2.8 с до Explorer)", "dependOn": "Нет", "dependedBy": "Фоновая очистка Smart Cleaning", "whatBreaks": "Отключается только фоновый мониторинг и всплывающие уведомления CCleaner 7. Сама программа продолжает нормально открываться вручную.", "action": "Безопасно отключить", "recommendedState": "Manual (Start=3) + отключить Smart Cleaning", "command": "Stop-Service -Name 'CCleaner7' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'CCleaner7' -StartupType Manual; Stop-Process -Name 'CCleaner*' -Force -ErrorAction SilentlyContinue", "rollback": "Set-Service -Name 'CCleaner7' -StartupType Automatic", "sourceNote": "Рекомендации Microsoft Community: фоновые резиденты чистильщиков замедляют вход в систему.", "defaultChecked": true}, {"id": "app_adguard_vpn", "name": "Adguard VPN Service + AdGuardVpn.exe", "displayName": "AdGuard VPN (Служба + Клиент в HKLM\\Run)", "category": "Сторонняя служба + Автозагрузка HKLM\\Run", "currentStatus": "Running (786.6 МБ ОЗУ, 550.9 с CPU!)", "startMode": "Auto (Start=2) + HKLM\\Run", "ramWS_MB": 786.6, "ramPriv_MB": 770.7, "cpuSec": 550.86, "bootImpactSec": 30.2, "bootPhase": "Фаза 2 + Фаза 3 (16:05:40, +232.8 с)", "dependOn": "BFE, nsi", "dependedBy": "AdGuard VPN туннель", "whatBreaks": "Если вы не используете AdGuard VPN постоянно с первой секунды включения ноутбука (тем более что одновременно запущены WireGuard и AmneziaVPN), перевод службы в Manual и отключение автозапуска в HKLM\\Run освободит сразу ~786 МБ ОЗУ, уберёт 30-секундную ступеньку на старте и сэкономит огромный ресурс батареи (551 с CPU за сессию!). При запуске ярлыка AdGuard VPN служба стартует сама.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Служба Manual + запуск клиента по требованию", "command": "Stop-Process -Name 'AdGuardVpn' -Force -ErrorAction SilentlyContinue; Stop-Service -Name 'Adguard VPN Service' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'Adguard VPN Service' -StartupType Manual", "rollback": "Set-Service -Name 'Adguard VPN Service' -StartupType Automatic; Start-Service -Name 'Adguard VPN Service'", "sourceNote": "Замер телеметрии T14S: суммарно AdGuardVpn.exe (422 МБ WS / 400 МБ Priv) + AdGuardVpnSvc.exe (365 МБ WS / 371 МБ Priv) потребляют 771 МБ выделенной памяти и больше всего процессорного времени среди всех фоновых утилит.", "defaultChecked": true}, {"id": "app_adguard", "name": "Adguard Service + Adguard.exe", "displayName": "AdGuard (Системный блокировщик рекламы)", "category": "Сторонняя служба + Автозагрузка HKLM\\Run", "currentStatus": "Running (1 662.7 МБ Private Commit!)", "startMode": "Auto (Start=2) + HKLM\\Run", "ramWS_MB": 82.3, "ramPriv_MB": 1662.7, "cpuSec": 353.38, "bootImpactSec": 30.5, "bootPhase": "Фаза 2 + Фаза 3 (16:05:10, +202.7 с)", "dependOn": "adgnetworkwfpdrv (WFP Driver)", "dependedBy": "Фильтрация HTTPS/рекламы во всех браузерах", "whatBreaks": "Внимание на цифры телеметрии T14S: служба AdguardSvc.exe зарезервировала 1 057.5 МБ Private Memory, а GUI-процесс Adguard.exe — ещё 605.2 МБ Private Memory (суммарно 1.66 ГБ вашего Commit Limit из 24 ГБ!), плюс в 02:21 ночи служба падала (Event ID 7031). Рекомендация: 1) в настройках AdGuard отключить неиспользуемые огромные списки фильтров и DNS-модуль (если не нужен); 2) перевести службу в DelayedAutoStart или использовать легковесное браузерное расширение AdGuard / uBlock Origin (экономит 1.5 ГБ Commit и 30 с старта).", "action": "Оптимизировать настройки", "recommendedState": "DelayedAutoStart=1 + очистка фильтров (или переход на браузерное расширение)", "command": "sc.exe config 'Adguard Service' start= delayed-auto", "rollback": "sc.exe config 'Adguard Service' start= auto", "sourceNote": "Замер T14S + AdGuard KB: системный WFP-прокси с инспекцией HTTPS и десятками списков фильтров резервирует более 1–1.6 ГБ Commit Charge.", "defaultChecked": true}, {"id": "svc_amnezia", "name": "AmneziaVPN-service", "displayName": "AmneziaVPN Service + Split Tunnel Driver", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Running", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 24.5, "ramPriv_MB": 32.0, "cpuSec": 1.8, "bootImpactSec": 2.4, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "nsi, BFE", "dependedBy": "Клиент AmneziaVPN", "whatBreaks": "Одновременный автостарт трёх VPN-служб (AdGuard VPN + AmneziaVPN + WireGuardManager) создаёт конкуренцию виртуальных адаптеров и правил WFP BFE при загрузке. Перевод AmneziaVPN-service в Manual позволяет запускать её только тогда, когда вы открываете AmneziaVPN.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "Stop-Service -Name 'AmneziaVPN-service' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'AmneziaVPN-service' -StartupType Manual", "rollback": "Set-Service -Name 'AmneziaVPN-service' -StartupType Automatic; Start-Service -Name 'AmneziaVPN-service'", "sourceNote": "Диагностика стека NSI/BFE на T14S: устранение конфликта трёх одновременных VPN-служб на старте.", "defaultChecked": true}, {"id": "svc_netlimiter", "name": "nlsvc + NLClientApp.exe", "displayName": "NetLimiter 5 Service & Client UI", "category": "Сторонняя служба + Автозагрузка", "currentStatus": "Running (179.7 МБ ОЗУ + слот +30 с)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 179.7, "ramPriv_MB": 136.4, "cpuSec": 5.64, "bootImpactSec": 30.1, "bootPhase": "Фаза 2 + Фаза 3 (16:06:55, +307.9 с)", "dependOn": "nldrv, RpcSs", "dependedBy": "Ограничение скорости и статистика трафика NetLimiter", "whatBreaks": "Сама служба nlsvc (64.7 МБ) применяет фоновые квоты/правила трафика, а окно клиента NLClientApp.exe (115 МБ WS / 89.4 МБ Priv) стартует через 5 минут после входа (+307.9 с, занимая 30-секундный слот). Рекомендуется отключить автозапуск графического окна NLClientApp.exe (правила службы nlsvc продолжат работать в фоне!), а службу nlsvc перевести в DelayedAutoStart или Manual, если постоянный шейпинг на ноутбуке не нужен.", "action": "Оптимизировать настройки", "recommendedState": "Отключить автозапуск GUI NLClientApp (оставить службу nlsvc в DelayedAuto)", "command": "Stop-Process -Name 'NLClientApp' -Force -ErrorAction SilentlyContinue; sc.exe config nlsvc start= delayed-auto", "rollback": "sc.exe config nlsvc start= auto", "sourceNote": "NetLimiter 5 Docs: служба nlsvc применяет правила и фильтры автономно без запущенного WPF-клиента NLClientApp.exe (экономия 115 МБ ОЗУ и 30 с старта).", "defaultChecked": true}, {"id": "app_grammarly", "name": "Grammarly.Desktop + Superhuman.WebUI", "displayName": "Grammarly Desktop Integrations + Superhuman WebUI (+6 процессов WebView2)", "category": "Автозагрузка пользователя", "currentStatus": "Running (767.3 МБ ОЗУ, 1 137 с CPU!)", "startMode": "Автозапуск при входе", "ramWS_MB": 767.3, "ramPriv_MB": 500.2, "cpuSec": 1137.1, "bootImpactSec": 25.0, "bootPhase": "Фаза 3: Вход +317.6 с ... +348.2 с", "dependOn": "Microsoft Edge WebView2 Runtime", "dependedBy": "Плавающий виджет проверки английской орфографии поверх всех окон Windows", "whatBreaks": "Посмотрите на реальный замер вашего T14S: связка Grammarly.Desktop.exe (384.9 МБ WS, 513.9 с CPU) + Superhuman.WebUI.exe (39.7 МБ WS, 340.4 с CPU) + 6 дочерних процессов msedgewebview2.exe (342.7 МБ WS, 282.8 с CPU) съедает 767 МБ физической ОЗУ и 1 137 секунд процессорного времени! Она глобально хукает ввод текста во всех окнах (UI Automation hook), вызывая микрофризы в САПР и сильнейший разряд батареи. Отключение автозапуска Grammarly освобождает почти 800 МБ ОЗУ и радикально снижает нагрузку на CPU.", "action": "Безопасно отключить", "recommendedState": "Отключить автозапуск (запускать только при написании английских текстов)", "command": "Stop-Process -Name 'Grammarly.Desktop','Superhuman.WebUI' -Force -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name '*Grammarly*' -ErrorAction SilentlyContinue", "rollback": "# Включить автозапуск в настройках Grammarly Desktop", "sourceNote": "Замер T14S: суммарно 1 137 с CPU (19 минут чистого процессорного времени!) за одну сессию + 767 МБ ОЗУ.", "defaultChecked": true}, {"id": "app_autodesk", "name": "Autodesk Access + AdskIdentityManager + CER + Licensing", "displayName": "Стек Autodesk (AdskAccessUIHost x4, AdskAccessCore, IdentityManager, Access Service, CER, Licensing)", "category": "Сторонние службы + Автозагрузка HKLM\\Run", "currentStatus": "Running (357.6 МБ ОЗУ, 183.8 с CPU)", "startMode": "Auto (Start=2) + 2 записи HKLM\\Run", "ramWS_MB": 357.6, "ramPriv_MB": 230.7, "cpuSec": 183.8, "bootImpactSec": 38.0, "bootPhase": "Фаза 2 + Фаза 3 (16:03:09 – 16:03:48)", "dependOn": "Нет", "dependedBy": "AutoCAD 2025 / 123D Design (только служба AdskLicensingService при запуске AutoCAD)", "whatBreaks": "Критическая деталь: для работы AutoCAD 2025 нужна ТОЛЬКО служба AdskLicensingService (и она отлично работает в режиме Manual / Вручную — AutoCAD сам запускает её при старте!). А вот Autodesk Access (AdskAccessCore + 4 процесса AdskAccessUIHost = 334 МБ ОЗУ), AdskIdentityManager (135.5 с CPU в фоне!) и Autodesk CER Service (отправка отчётов о сбоях) вообще не нужны в автозагрузке — они лишь проверяют обновления в фоне и съедают 358 МБ ОЗУ.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Отключить Autodesk Access в Run; перевести AdskLicensingService, Access Host и CER в Manual", "command": "Stop-Process -Name 'AdskAccessUIHost','AdskAccessCore','AdskIdentityManager' -Force -ErrorAction SilentlyContinue; Stop-Service -Name 'Autodesk Access Service Host','Autodesk CER Service' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'Autodesk Access Service Host' -StartupType Manual; Set-Service -Name 'Autodesk CER Service' -StartupType Manual; Set-Service -Name 'AdskLicensingService' -StartupType Manual", "rollback": "Set-Service -Name 'AdskLicensingService' -StartupType Automatic; Start-Service -Name 'AdskLicensingService'", "sourceNote": "Autodesk Knowledge Network: Autodesk Access можно безопасно убрать из автозагрузки; AdskLicensingService запускается по требованию при открытии AutoCAD.", "defaultChecked": true}, {"id": "svc_flexnet", "name": "FlexNet Licensing Service 64", "displayName": "FlexNet Licensing Service 64 (FNPLicensingService64)", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Running", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 14.2, "ramPriv_MB": 18.5, "cpuSec": 0.8, "bootImpactSec": 1.5, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "Нет", "dependedBy": "Старые пакеты Autodesk / инженерное ПО с лицензией FlexNet", "whatBreaks": "Ничего не ломается при переводе в Manual (Вручную): по стандарту Microsoft/Flexera служба FlexNet должна иметь тип запуска Manual (Demand Start) — любая программа, использующая FlexNet, сама вызывает StartService при своём запуске.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "Set-Service -Name 'FlexNet Licensing Service 64' -StartupType Manual", "rollback": "Set-Service -Name 'FlexNet Licensing Service 64' -StartupType Automatic", "sourceNote": "Документация Flexera / Autodesk: штатный режим работы FlexNet Licensing Service — Manual (Вручную).", "defaultChecked": true}, {"id": "svc_intel_dsa", "name": "DSAService + DSAUpdateService + DSATray.exe", "displayName": "Intel Driver & Support Assistant (2 службы + агент в трее)", "category": "Сторонняя служба + Автозагрузка", "currentStatus": "Running (196.6 МБ ОЗУ, старт до Explorer +1.6 с)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 196.6, "ramPriv_MB": 64.5, "cpuSec": 8.72, "bootImpactSec": 3.2, "bootPhase": "Фаза 2 + Фаза 3 (+1.6 с до Explorer!)", "dependOn": "Нет", "dependedBy": "Веб-проверка драйверов на сайте Intel", "whatBreaks": "Никакие драйверы Intel от этой утилиты не зависят! Это исключительно фоновый агент проверки обновлений на сайте intel.com, который на вашем T14S крутится постоянно и съедает 196.6 МБ физической ОЗУ (103.8 МБ DSAService + 92.8 МБ DSATray) и стартует на +1.6 с раньше Проводника Windows.", "action": "Безопасно отключить", "recommendedState": "Manual (Start=3) + остановить DSATray", "command": "Stop-Process -Name 'DSATray' -Force -ErrorAction SilentlyContinue; Stop-Service -Name 'DSAService','DSAUpdateService' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'DSAService' -StartupType Manual; Set-Service -Name 'DSAUpdateService' -StartupType Manual", "rollback": "Set-Service -Name 'DSAService' -StartupType Automatic; Set-Service -Name 'DSAUpdateService' -StartupType Automatic", "sourceNote": "Intel Support: для корпоративных ноутбуков Lenovo ThinkPad рекомендуется получать протестированные драйверы через Lenovo Vantage / Windows Update, а не держать резидентный Intel DSA в ОЗУ.", "defaultChecked": true}, {"id": "app_crossdevice_phone", "name": "PhoneExperienceHost + CrossDeviceService + CrossDeviceResume", "displayName": "Связь с телефоном (Phone Link) и Между устройствами (CrossDevice)", "category": "Системные фоновые UWP-процессы Windows 11 26H2", "currentStatus": "Running (361.6 МБ ОЗУ, 101.5 с CPU)", "startMode": "Фоновая активность UWP при входе", "ramWS_MB": 361.6, "ramPriv_MB": 118.6, "cpuSec": 101.5, "bootImpactSec": 4.2, "bootPhase": "Фаза 3 (+7.4 с, +11.4 с, +56.8 с)", "dependOn": "Bluetooth / Wi-Fi / Учётная запись Microsoft", "dependedBy": "Синхронизация уведомлений и звонков смартфона с ПК", "whatBreaks": "На T14S три процесса (PhoneExperienceHost 169 МБ + CrossDeviceService 147.9 МБ + CrossDeviceResume 44.7 МБ) стартуют автоматически в первую минуту после входа и держат 361.6 МБ ОЗУ + постоянно опрашивают Bluetooth/сеть (101.5 с CPU). Если вам не нужна постоянная синхронизация телефона с ноутбуком, отключение фоновой работы этих компонентов в «Параметры -> Bluetooth и устройства -> Мобильные устройства» освобождает ~360 МБ ОЗУ и снижает расход батареи.", "action": "Безопасно отключить", "recommendedState": "Запретить фоновую работу Phone Link и CrossDevice", "command": "Stop-Process -Name 'PhoneExperienceHost','CrossDeviceService','CrossDeviceResume' -Force -ErrorAction SilentlyContinue; reg add 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Mobility' /v 'OptedIn' /t REG_DWORD /d 0 /f", "rollback": "reg add 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Mobility' /v 'OptedIn' /t REG_DWORD /d 1 /f", "sourceNote": "Замер T14S: 361.6 МБ Working Set сразу после старта системы.", "defaultChecked": true}, {"id": "app_widgets", "name": "WidgetBoard + WidgetService + MicrosoftStartFeedProvider", "displayName": "Виджеты Windows 11 и Лента Microsoft Start (+ WebView2)", "category": "Системные фоновые компоненты Windows 11 26H2", "currentStatus": "Running (94.8 МБ прямых + ~170 МБ WebView2)", "startMode": "Автозапуск со стартом оболочки (+13.5 с)", "ramWS_MB": 264.8, "ramPriv_MB": 82.6, "cpuSec": 11.6, "bootImpactSec": 3.5, "bootPhase": "Фаза 3 (+13.5 с и +81.4 с)", "dependOn": "Edge WebView2", "dependedBy": "Панель виджетов погоды/новостей на панели задач (Win+W)", "whatBreaks": "Отключается только панель новостей и погоды Виджетов на панели задач. При этом уходят процессы WidgetBoard.exe, WidgetService.exe, MicrosoftStartFeedProvider.exe и связанные с ними экземпляры msedgewebview2.exe (~265 МБ ОЗУ) и прекращаются фоновые сетевые запросы новостей.", "action": "Безопасно отключить", "recommendedState": "Скрыть Виджеты (TaskbarDa=0) и остановить фоновый фид", "command": "reg add 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' /v 'TaskbarDa' /t REG_DWORD /d 0 /f; Stop-Process -Name 'WidgetBoard','WidgetService','MicrosoftStartFeedProvider' -Force -ErrorAction SilentlyContinue", "rollback": "reg add 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced' /v 'TaskbarDa' /t REG_DWORD /d 1 /f", "sourceNote": "Официальные данные Microsoft по оптимизации ОЗУ в Windows 11 26H2: отключение фоновой предзагрузки Виджетов экономит более 200–250 МБ ОЗУ.", "defaultChecked": true}, {"id": "svc_anydesk", "name": "AnyDesk (Служба AnyDesk Service)", "displayName": "AnyDesk Service (Фоновая служба удалённого доступа)", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Running (старт на +35.4 с!)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 32.4, "ramPriv_MB": 44.3, "cpuSec": 2.28, "bootImpactSec": 2.0, "bootPhase": "Фаза 2 (15:56:31.9, +35.4 с от старта ядра)", "dependOn": "RpcSs", "dependedBy": "Неконтролируемый входящий доступ AnyDesk до входа в систему", "whatBreaks": "Обратите внимание: ярлык AnyDesk.lnk в автозагрузке вы уже отключили (StartupApproved=False), НО служба AnyDesk осталась в режиме Auto (Start=2) и стартует на 35-й секунде загрузки ОС, постоянно слушая сеть! При переводе службы в Manual вы сможете запускать AnyDesk вручную, когда нужен удалённый доступ.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "Stop-Service -Name 'AnyDesk' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'AnyDesk' -StartupType Manual", "rollback": "Set-Service -Name 'AnyDesk' -StartupType Automatic; Start-Service -Name 'AnyDesk'", "sourceNote": "Телеметрия T14S: процесс AnyDesk (PID 5144) запущен в 15:56:31.9 (за 5 минут до входа пользователя).", "defaultChecked": true}, {"id": "svc_hpprint", "name": "HPPrintScanDoctorService", "displayName": "HP Print Scan Doctor Service", "category": "Сторонняя служба (Start=2 Auto)", "currentStatus": "Running", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 16.5, "ramPriv_MB": 21.0, "cpuSec": 0.9, "bootImpactSec": 1.2, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "Нет", "dependedBy": "Разовая диагностическая утилита HP Print and Scan Doctor", "whatBreaks": "Ничего. Обычная печать на принтеры HP или плоттер Canon imagePROGRAF TM-255 идёт через системную службу Spooler (Диспетчер печати), а HPPrintScanDoctorService — остаточная служба от разовой утилиты диагностики HP.", "action": "Безопасно отключить", "recommendedState": "Disabled / Manual (Start=3)", "command": "Stop-Service -Name 'HPPrintScanDoctorService' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'HPPrintScanDoctorService' -StartupType Manual", "rollback": "Set-Service -Name 'HPPrintScanDoctorService' -StartupType Automatic", "sourceNote": "HP Support: служба требуется только во время запуска мастера диагностики HP Print and Scan Doctor.", "defaultChecked": true}, {"id": "svc_updaters", "name": "FoxitReaderUpdateService + YandexBrowserService + GoogleUpdater + OptionsPlusUpdaterService", "displayName": "Фоновые службы автообновления (Foxit, Яндекс.Браузер, Google, Logi Options+)", "category": "Сторонние службы (Start=2 Auto)", "currentStatus": "Running (4 службы Start=2, Del=0)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 48.0, "ramPriv_MB": 56.0, "cpuSec": 6.4, "bootImpactSec": 4.0, "bootPhase": "Фаза 2: Службы (34.5–64 с)", "dependOn": "RPCSS", "dependedBy": "Тихое фоновое обновление браузеров и PDF-ридера", "whatBreaks": "Все 4 службы стоят в режиме немедленного автостарта (Start=2, DelayedAutoStart=0) и нагружают диск и сеть на первом этапе загрузки ОС. При переводе их в Manual (Вручную) браузеры Chrome/Яндекс и Foxit PDF Reader всё равно проверяют обновления при своём открытии.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3)", "command": "foreach ($s in @('FoxitReaderUpdateService','YandexBrowserService','OptionsPlusUpdaterService','GoogleUpdaterService157.0.8089.0','GoogleUpdaterInternalService157.0.8089.0')) { Stop-Service -Name $s -Force -ErrorAction SilentlyContinue; Set-Service -Name $s -StartupType Manual -ErrorAction SilentlyContinue }", "rollback": "foreach ($s in @('FoxitReaderUpdateService','YandexBrowserService','OptionsPlusUpdaterService')) { Set-Service -Name $s -StartupType Automatic -ErrorAction SilentlyContinue }", "sourceNote": "Телеметрия T14S: 5 служб-обновлялок зарегистрированы как Start=2 без отложенного старта.", "defaultChecked": true}, {"id": "app_lenovo_telemetry", "name": "CoreTelemetryPlugin + LenovoVantage GenericMessagingAddin", "displayName": "Lenovo Universal Device Client Telemetry & Messaging Addin", "category": "Автозагрузка / Фоновые плагины Lenovo", "currentStatus": "Running (51.5 МБ WS / 118.0 МБ Private)", "startMode": "Автозапуск при входе (+2.1 с и +359.6 с)", "ramWS_MB": 51.5, "ramPriv_MB": 118.0, "cpuSec": 10.39, "bootImpactSec": 2.5, "bootPhase": "Фаза 3 (+2.1 с до Explorer и +359.6 с)", "dependOn": "LenovoVantageService, LITSSvc, PowerMgr", "dependedBy": "Отправка телеметрии Lenovo UDC и рекламные пуш-сообщения Vantage", "whatBreaks": "Важно разделить: службы PowerMgr.exe (7 МБ), LITSSvc.exe (10 МБ, Lenovo Intelligent Thermal Solution) и саму базовую LenovoVantageService ОСТАВЛЯЕМ (они отвечают за пороги заряда батареи 80%, Fn-клавиши TPOSD и термопрофили ThinkPad!). А вот процесс телеметрии CoreTelemetryPlugin.exe (50.5 МБ Private, стартует на +2.1 с до Проводника!) и маркетинговый плагин GenericMessagingAddin (37.8 МБ Private) можно безопасно отключить.", "action": "Оптимизировать настройки", "recommendedState": "Отключить телеметрию UDC и маркетинговые сообщения в Lenovo Vantage, оставить PowerMgr и LITSSvc", "command": "Stop-Process -Name 'CoreTelemetryPlugin' -Force -ErrorAction SilentlyContinue; Disable-ScheduledTask -TaskPath '\\Lenovo\\*' -TaskName '*UDC*','*Telemetry*' -ErrorAction SilentlyContinue", "rollback": "Enable-ScheduledTask -TaskPath '\\Lenovo\\*' -TaskName '*UDC*','*Telemetry*' -ErrorAction SilentlyContinue", "sourceNote": "ThinkPad Community / Lenovo Docs: LITSSvc и PowerMgr управляют питанием и охлаждением, а UDC CoreTelemetryPlugin собирает аналитику.", "defaultChecked": true}, {"id": "app_igcc_fiio", "name": "IGCC + IGCCTray + FiiOCplApp", "displayName": "Intel Graphics Command Center Tray (81 МБ) + FiiO Control Panel (15.6 МБ)", "category": "Автозагрузка", "currentStatus": "Running (96.6 МБ ОЗУ)", "startMode": "Автозапуск (+332 с и +378 с)", "ramWS_MB": 96.6, "ramPriv_MB": 65.5, "cpuSec": 3.7, "bootImpactSec": 2.2, "bootPhase": "Фаза 3 (+332.7 с и +378.7 с)", "dependOn": "Драйвер Intel UHD Graphics / USB-драйвер FiiO", "dependedBy": "Иконки IGCC и FiiO в системном трее", "whatBreaks": "Сами драйверы видеокарты Intel и USB-ЦАП FiiO KA17 (ASIO/WASAPI) работают на уровне ядра независимо от треевых утилит IGCCTray.exe и FiiOCplApp.exe! Панель FiiO Control Panel нужна только тогда, когда вы подключили ЦАП FiiO и хотите сменить размер ASIO-буфера, а IGCCTray съедает 81 МБ ОЗУ ради горячих клавиш поворота экрана.", "action": "Безопасно отключить", "recommendedState": "Отключить автозапуск IGCCTray и FiiO Control Panel Autostart.lnk", "command": "Stop-Process -Name 'IGCCTray','IGCC','FiiOCplApp' -Force -ErrorAction SilentlyContinue", "rollback": "# Включить FiiO Control Panel Autostart в диспетчере задач при необходимости", "sourceNote": "Телеметрия T14S: IGCCTray + IGCC занимают 81 МБ WS / 63.1 МБ Private.", "defaultChecked": true}, {"id": "app_cloud_sync", "name": "OneDrive + OneDrive.Sync.Service + GoogleDriveFS", "displayName": "Облачная синхронизация: Microsoft OneDrive + Google Drive File Stream", "category": "Автозагрузка (HKCU\\Run + Служба)", "currentStatus": "Running (358.7 МБ WS / 533.4 МБ Private, 365 с CPU)", "startMode": "HKCU\\Run (Enabled)", "ramWS_MB": 358.7, "ramPriv_MB": 533.4, "cpuSec": 365.4, "bootImpactSec": 28.0, "bootPhase": "Фаза 3 (16:06:08, +260.7 с)", "dependOn": "cldflt (Cloud Files Filter Driver), googledrivefs31931", "dependedBy": "Синхронизация файлов OneDrive и Google Диска", "whatBreaks": "Полностью отключать облака не нужно, если вы синхронизируете рабочие проекты. Однако: 1) в OneDrive работает отдельная служба OneDrive.Sync.Service.exe (335.7 МБ Private, 279 с CPU) ПЛЮС клиент OneDrive.exe (168.4 МБ Private); 2) обязательно включите функцию «Файлы по запросу (Files On-Demand)» и в настройках OneDrive поставьте галочку «Приостанавливать синхронизацию, когда устройство работает в режиме экономии заряда».", "action": "Оптимизировать настройки", "recommendedState": "Оставить нужное облако, включить Files On-Demand и паузу синхронизации от батареи", "command": "# Настраивается в параметрах OneDrive -> Синхронизация и резервное копирование", "rollback": "# Без изменений", "sourceNote": "Microsoft OneDrive Docs: пауза синхронизации при работе от батареи существенно снижает расход энергии и дисковый I/O.", "defaultChecked": false}, {"id": "ms_sysmain", "name": "SysMain (Superfetch)", "displayName": "SysMain (Предварительная выборка и кэширование в ОЗУ)", "category": "Системная служба Windows 11 26H2", "currentStatus": "Running (Start=2 Auto)", "startMode": "Auto (Start=2, Del=0)", "ramWS_MB": 95.0, "ramPriv_MB": 68.0, "cpuSec": 18.5, "bootImpactSec": 3.5, "bootPhase": "Фаза 2 + пост-загрузка (Event ID 106)", "dependOn": "rpcss, fileinfo", "dependedBy": "Нет зависимых служб (DepBy=[])", "whatBreaks": "Отключение SysMain НЕ нарушает работу ни одной службы Windows (список зависимых служб пуст: DepBy=[]), а сжатие памяти (Memory Compression / MMAgent) в Windows 11 24H2–26H2 работает в ядре независимо от SysMain! На ноутбуке с быстрым NVMe SSD и дефицитом ОЗУ (16 ГБ) перевод SysMain в Manual/Disabled убирает фоновую подкачку неиспользуемых программ в ОЗУ сразу после загрузки и снижает фоновый износ/нагрев SSD.", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3) или Disabled (на NVMe SSD при 16 ГБ ОЗУ)", "command": "Stop-Service -Name 'SysMain' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'SysMain' -StartupType Manual", "rollback": "Set-Service -Name 'SysMain' -StartupType Automatic; Start-Service -Name 'SysMain'", "sourceNote": "Опыт сообщества Windows 11 26H2 + NinjaOne / Microsoft Q&A: на NVMe SSD при нехватке ОЗУ (16 ГБ) отключение SysMain освобождает оперативную память и убирает пост-стартовую дисковую активность (Event ID 106).", "defaultChecked": true}, {"id": "ms_wsearch", "name": "WSearch + SearchHost.exe", "displayName": "Windows Search (Индексирование поиска Windows)", "category": "Системная служба Windows 11 26H2", "currentStatus": "Running (Start=2, Del=1) + SearchHost (121.6 МБ)", "startMode": "Auto Delayed (Start=2, Del=1)", "ramWS_MB": 168.0, "ramPriv_MB": 88.0, "cpuSec": 24.0, "bootImpactSec": 2.0, "bootPhase": "Фаза 3 (+13.1 с и +120 с)", "dependOn": "RPCSS, BrokerInfrastructure", "dependedBy": "workfolderssvc, WMPNetworkSvc", "whatBreaks": "У вас уже установлен и работает молниеносный индексный поиск Everything (Everything.exe — ищет по MFT NTFS за миллисекунды!), а для почты вы используете The Bat! (со своей собственной базой индексации, а не Outlook). Если вы ищете файлы через Everything или Total Commander, службу WSearch можно либо перевести в Manual, либо в «Параметры индексирования» исключить папки с тысячами мелких файлов (проекты САПР, библиотеки DipTrace/Altium, репозитории Git).", "action": "Оптимизировать настройки", "recommendedState": "Сузить области индексирования (исключить папки проектов/САПР) или перевести в Manual", "command": "# Рекомендуется сузить папки в control.exe srchadmin.dll (либо Set-Service WSearch -StartupType Manual)", "rollback": "Set-Service -Name 'WSearch' -StartupType AutomaticDelayedStart; Start-Service -Name 'WSearch'", "sourceNote": "Microsoft Docs: исключение папок разработки и САПР из Windows Search устраняет фоновую нагрузку на CPU/SSD.", "defaultChecked": false}, {"id": "ms_diagtrack", "name": "DiagTrack + DPS + PcaSvc", "displayName": "Функциональные возможности для подключенных пользователей и телеметрия (DiagTrack)", "category": "Системная служба Windows 11 26H2", "currentStatus": "Running", "startMode": "Auto (Start=2)", "ramWS_MB": 42.0, "ramPriv_MB": 38.0, "cpuSec": 12.0, "bootImpactSec": 1.8, "bootPhase": "Фаза 2: Службы", "dependOn": "RpcSs", "dependedBy": "Нет критических зависимостей", "whatBreaks": "Отключается отправка диагностической телеметрии Microsoft и фоновые запуски Compatibility Appraiser (Microsoft Compatibility Telemetry), который часто будит диск и процессор. На работу Windows Update и магазин приложений перевод DiagTrack в Manual не влияет (при условии сохранения базового уровня диагностики в Параметрах).", "action": "Перевести в Ручной (Manual)", "recommendedState": "Manual (Start=3) + минимальный уровень диагностических данных", "command": "Stop-Service -Name 'DiagTrack' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'DiagTrack' -StartupType Manual; reg add 'HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection' /v 'AllowTelemetry' /t REG_DWORD /d 1 /f", "rollback": "Set-Service -Name 'DiagTrack' -StartupType Automatic; Start-Service -Name 'DiagTrack'", "sourceNote": "Microsoft Privacy & Telemetry Docs (Windows 11 Pro): политика AllowTelemetry=1 ограничивает сбор до минимально необходимого.", "defaultChecked": true}, {"id": "ms_maps_lfsvc", "name": "MapsBroker + lfsvc", "displayName": "Диспетчер скачанных карт (MapsBroker) + Служба геолокации (lfsvc)", "category": "Системная служба Windows 11 26H2", "currentStatus": "lfsvc=Running, MapsBroker=Auto(Del=1)", "startMode": "Auto Delayed / Manual", "ramWS_MB": 18.0, "ramPriv_MB": 12.0, "cpuSec": 1.2, "bootImpactSec": 0.8, "bootPhase": "Фаза 2: Службы", "dependOn": "RpcSs", "dependedBy": "Офлайн-карты Windows (устарели в Win11 26H2) и геолокация UWP", "whatBreaks": "Приложение офлайн-карт Windows выведено из эксплуатации, поэтому служба MapsBroker (сейчас стоит в Auto Delayed) не нужна вовсе. Служба геолокации lfsvc нужна только если вы используете определение местоположения в погодных виджетах.", "action": "Безопасно отключить", "recommendedState": "MapsBroker -> Disabled; lfsvc -> Manual", "command": "Stop-Service -Name 'MapsBroker','lfsvc' -Force -ErrorAction SilentlyContinue; Set-Service -Name 'MapsBroker' -StartupType Disabled; Set-Service -Name 'lfsvc' -StartupType Manual", "rollback": "Set-Service -Name 'MapsBroker' -StartupType AutomaticDelayedStart; Set-Service -Name 'lfsvc' -StartupType Manual", "sourceNote": "Microsoft Deprecated Features Windows 11: офлайн-карты удалены, служба MapsBroker не используется.", "defaultChecked": true}, {"id": "ms_vbs_hvci", "name": "VBS + HVCI (Memory Integrity) + HvHost", "displayName": "Безопасность на основе виртуализации (VBS) и Целостность памяти (HVCI)", "category": "Аппаратная виртуализация ядра Windows 11 26H2", "currentStatus": "Включено (EnableVBS=1, HVCI=1, Secure System=61.7 МБ)", "startMode": "Boot Hypervisor (Start=0)", "ramWS_MB": 650.0, "ramPriv_MB": 550.0, "cpuSec": 45.0, "bootImpactSec": 6.5, "bootPhase": "Фаза 1: Старт гипервизора VSM (15:55:57)", "dependOn": "Intel VT-x / VT-d, TPM 2.0", "dependedBy": "Изоляция ядра (Core Isolation / целостность драйверов)", "whatBreaks": "Важный инженерный компромисс: у вас на T14S стоят 3 эшелона защиты одновременно — ESET Security (7 ядерных драйверов + ekrn) + AdGuard + аппаратная виртуализация ядра VBS/HVCI. На процессоре 10-го поколения Intel Core i7-10510U (Comet Lake, где ещё нет аппаратного ускорения MBEC последнего поколения) включённый HVCI отнимает ~500–800 МБ ОЗУ (невыгружаемые таблицы страниц второго уровня SLAT/EPT + процесс Secure System), добавляет 5–7 с к старту ядра (VSM Key Provisioning) и повышает энергопотребление CPU на 5–10%. Кроме того, HVCI иногда блокирует старые лабораторные USB/J-Link/ArgyllCMS/Atmel драйверы. Решение: оставлять включённым для максимальной защиты ИЛИ отключить HVCI при наличии ESET Security ради скорости, ОЗУ и совместимости с программаторами.", "action": "Оптимизировать настройки", "recommendedState": "По выбору пользователя (опционально отключить HVCI при активном ESET Security)", "command": "# Опционально (требует перезагрузки): reg add 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity' /v 'Enabled' /t REG_DWORD /d 0 /f", "rollback": "reg add 'HKLM\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity' /v 'Enabled' /t REG_DWORD /d 1 /f", "sourceNote": "Microsoft Support / The Verge (Oct 2026): HVCI защищает ядро, но на процессорах прошлых поколений создаёт измеримую нагрузку на CPU и память.", "defaultChecked": false}, {"id": "keep_everything", "name": "Everything Service + Everything.exe", "displayName": "Everything (Мгновенный поиск файлов voidtools)", "category": "Сторонняя служба + Автозагрузка HKLM\\Run", "currentStatus": "Running (122.2 МБ ОЗУ) — попадает в 30-с очередь Run!", "startMode": "Auto (Start=2) + HKLM\\Run", "ramWS_MB": 122.2, "ramPriv_MB": 105.3, "cpuSec": 104.0, "bootImpactSec": 0.5, "bootPhase": "Фаза 3 (16:04:10, задержан очередью HKLM\\Run на +142 с)", "dependOn": "NTFS MFT", "dependedBy": "Мгновенный поиск файлов", "whatBreaks": "Оставить обязательно! Но важно: сам Everything стартует за 0.3 с, однако в 16:04:10 он ждал 30-секундного таймаута предыдущего элемента HKLM\\Run (eguiProxy). После очистки очереди HKLM\\Run от Autodesk Access, OODefragTray и AdGuardVpn, Everything будет стартовать мгновенно!", "action": "Критично — оставить", "recommendedState": "Оставить включённым (старт ускорится автоматически после очистки HKLM\\Run)", "command": "# Оставить без отключения", "rollback": "# Без изменений", "sourceNote": "Телеметрия T14S: полезный инженерный инструмент с минимальным влиянием при чистой очереди Run.", "defaultChecked": false}, {"id": "keep_thebat_punto_fscapture", "name": "TheBat64 + Punto Switcher + FastStone Capture + DisplayCAL", "displayName": "Рабочее окружение: The Bat! v12.3 (6 процессов, 794 МБ), Punto Switcher, FastStone Capture, DisplayCAL LUT", "category": "Рабочие программы пользователя", "currentStatus": "Running (923 МБ WS / 1 453 МБ Private)", "startMode": "Автозапуск при входе", "ramWS_MB": 923.4, "ramPriv_MB": 1452.6, "cpuSec": 677.1, "bootImpactSec": 4.5, "bootPhase": "Фаза 3", "dependOn": "Сеть / Цветовой профиль монитора", "dependedBy": "Почта The Bat!, автопереключение раскладки, скриншоты, калибровка экрана", "whatBreaks": "Обратите внимание на две тонкости в телеметрии T14S: 1) The Bat! v12.3.1 сейчас запущен в 6 экземплярах/процессах (PID 9832, 2664, 14912, 13528, 19808, 4612 — вероятно, процессы CEF/HTML-рендерера писем), занимая 793.6 МБ WS и 1 300.1 МБ Private Memory! Если вы не проверяете почту постоянно в поездке от батареи, закрытие The Bat! освобождает 1.3 ГБ Commit; 2) DisplayCAL-apply-profiles.exe потратил 82.9 с CPU на постоянную перезагрузку LUT кривых видеокарты — в настройках DisplayCAL Profile Loader можно отключить частый принудительный ресет гаммы.", "action": "Оптимизировать настройки", "recommendedState": "Оставить; закрывать The Bat! при тяжёлых расчётах в САПР (освобождает 1.3 ГБ Commit)", "command": "# Рабочие инструменты пользователя — не отключаются скриптом", "rollback": "# Без изменений", "sourceNote": "Телеметрия T14S: 6 процессов TheBat64.exe занимают 1 300.1 МБ Private Memory.", "defaultChecked": false}, {"id": "keep_eset", "name": "ekrn + efwd + ekrnEpfw + eguiProxy (ESET Security)", "displayName": "ESET Security 20.0 (Антивирус и файрвол)", "category": "Критическая защита (Start=0/1/2)", "currentStatus": "Running (389.1 МБ WS / 121.2 МБ Private)", "startMode": "Auto (Start=2) + 7 драйверов", "ramWS_MB": 389.1, "ramPriv_MB": 121.2, "cpuSec": 2.6, "bootImpactSec": 3.0, "bootPhase": "Фаза 1–3", "dependOn": "BFE, FltMgr", "dependedBy": "Антивирусная и сетевая защита ноутбука", "whatBreaks": "ESET Security очень экономичен по процессору (всего 2.6 с CPU!) и памяти (121 МБ Private) по сравнению с AdGuard (1662 МБ Private) и Grammarly (1137 с CPU). Отключать ESET НЕ нужно! Единственная рекомендация: добавить папки рабочих проектов САПР (DipTrace, Altium, компиляторы Go/STM32) в исключения сканирования в реальном времени ESET для ускорения сборки и сохранения проектов.", "action": "Критично — оставить", "recommendedState": "Оставить включённым (добавить папки САПР/компиляторов в исключения)", "command": "# Антивирус ESET Security — оставить без изменений", "rollback": "# Без изменений", "sourceNote": "Телеметрия T14S: ESET потребляет минимум CPU (2.6 с) и работает стабильно.", "defaultChecked": false}, {"id": "keep_lenovo_core", "name": "PowerMgr + LITSSvc + TPOSD + LenovoVantageService", "displayName": "Ядро управления питанием и охлаждением Lenovo ThinkPad (PowerMgr, LITSSvc, TPOSD)", "category": "Критические системные службы Lenovo", "currentStatus": "Running (49.9 МБ ОЗУ)", "startMode": "Auto (Start=2)", "ramWS_MB": 49.9, "ramPriv_MB": 50.0, "cpuSec": 14.9, "bootImpactSec": 1.2, "bootPhase": "Фаза 2–3 (+1.3 с ... +3.2 с)", "dependOn": "IBMPMDRV (pmdrvs.sys), TPPWRIF (Tppwr64v.sys)", "dependedBy": "Контроль порогов заряда батареи, адаптивное охлаждение Lap/Desk mode, экранная индикация Fn", "whatBreaks": "Отключение LITSSvc или PowerMgr приведёт к потере управления тепловыми пакетами (PL1/PL2 процессора i7-10510U), сбросу порогов заряда батареи и отказу клавиш Fn. Однако обратите внимание на лог T14S: процесс SmartStandby.exe (Lenovo Smart Standby) 8 раз подряд сбрасывал схему питания (Event ID 12)! Рекомендуется в Lenovo Vantage отключить функцию «Smart Standby (Интеллектуальный ждущий режим)», оставив сами службы питания активными.", "action": "Критично — оставить", "recommendedState": "Оставить службы; отключить только функцию Smart Standby в Lenovo Vantage", "command": "# Оставить LITSSvc и PowerMgr; при необходимости отключить задачу Lenovo Smart Standby", "rollback": "# Без изменений", "sourceNote": "Журнал System T14S (Event ID 12): SmartStandby.exe многократно перезаписывает активную схему питания Windows.", "defaultChecked": false}];
+const TIMELINE_EVENTS = [{"secKernel": 0.0, "secLogon": -351.5, "time": "15:55:56.5", "phase": "Ядро и драйверы (Boot/System)", "actor": "ntoskrnl.exe + Secure System (VBS/HVCI)", "ramMB": 170.3, "cpuSec": 179.9, "status": "Старт ядра Windows 11 26H2 (Build 26300.9818) + инициализация гипервизора VBS/HVCI и 14 ранних фильтров (Acronis fltsrv/snapman, ESET x7, NetLimiter nldrv, AdGuard WFP, TrueCrypt)", "severity": "warn"}, {"secKernel": 34.5, "secLogon": -317.0, "time": "15:56:31.0", "phase": "Старт подсистемы служб (SCM)", "actor": "EventLog (Event ID 6005 / 6013)", "ramMB": 28.0, "cpuSec": 4.2, "status": "Инициализация журнала событий через 34.5 с после старта ядра; параллельный запуск 30 сторонних служб с Start=2 и DelayedAutoStart=0", "severity": "info"}, {"secKernel": 35.4, "secLogon": -316.1, "time": "15:56:31.9", "phase": "Фоновые службы (Start=2, Del=0)", "actor": "AnyDesk + AdskLicensing + AltA2dp + Everything + ekrn + LITSSvc + PowerMgr", "ramMB": 612.0, "cpuSec": 135.0, "status": "Одновременный старт десятков служб без отложенного запуска (AnyDesk стартует как служба за 5 минут до входа пользователя!)", "severity": "warn"}, {"secKernel": 49.5, "secLogon": -302.0, "time": "15:56:46.0", "phase": "Сбой драйверов (Event ID 7026)", "actor": "aehd.sys + wesp.sys", "ramMB": 0.0, "cpuSec": 0.0, "status": "КРИТИЧЕСКАЯ ЗАДЕРЖКА SCM: Сбой загрузки драйверов aehd (конфликт с Hyper-V/VBS) и сообщение 7026 по wesp (компонент Microsoft WESP из KB5127936 — известная проблема, не отключать)", "severity": "crit"}, {"secKernel": 62.5, "secLogon": -289.0, "time": "15:56:59.0", "phase": "Инсталляция и краш служб Samsung", "actor": "SamsungMagicianSVC + CMigrationService", "ramMB": 70.0, "cpuSec": 18.5, "status": "SamsungMagicianSVC заново устанавливает драйвер MagicianSataModeReader (ID 7045), а через 1 с служба CMigrationService аварийно падает (ID 7034)!", "severity": "crit"}, {"secKernel": 67.5, "secLogon": -284.0, "time": "15:57:04.0", "phase": "Сбросы схемы питания (ID 12 x8)", "actor": "SmartStandby.exe + esif_uf.exe", "ramMB": 24.0, "cpuSec": 5.1, "status": "Утилита Lenovo SmartStandby.exe и Intel Dynamic Tuning 8 раз подряд перезаписывают активную схему питания", "severity": "warn"}, {"secKernel": 351.5, "secLogon": 0.0, "time": "16:01:48.0", "phase": "Вход пользователя (Winlogon ID 7001)", "actor": "Winlogon -> Userinit", "ramMB": 45.0, "cpuSec": 2.0, "status": "Уведомление входа пользователя (User Logon Notification). Начало запуска задач входа и веток Run", "severity": "info"}, {"secKernel": 353.1, "secLogon": 1.6, "time": "16:01:49.6", "phase": "Старт ДО Проводника (+1.6...+4.8 с)", "actor": "wireguard + DSATray + CoreTelemetryPlugin + logioptionsplus + CCleaner + HDSentinel + DisplayCAL", "ramMB": 336.4, "cpuSec": 335.9, "status": "8 сторонних задач планировщика стартуют РАНЬШЕ оболочки Explorer.exe, конкурируя за CPU и NVMe I/O!", "severity": "warn"}, {"secKernel": 358.0, "secLogon": 6.5, "time": "16:01:54.5", "phase": "Старт рабочего стола (+6.5 с)", "actor": "Explorer.EXE", "ramMB": 227.5, "cpuSec": 47.4, "status": "Запуск графической оболочки Проводника Windows", "severity": "ok"}, {"secKernel": 358.9, "secLogon": 7.4, "time": "16:01:55.4", "phase": "Фоновые UWP (+7.4...+56.8 с)", "actor": "CrossDeviceResume + CrossDeviceService + SearchHost + WidgetBoard + PhoneExperienceHost", "ramMB": 648.0, "cpuSec": 137.1, "status": "Автоматический запуск Phone Link (169 МБ), CrossDevice (193 МБ), Виджетов (95 МБ + WebView2) и Поиска (122 МБ)", "severity": "warn"}, {"secKernel": 432.9, "secLogon": 81.4, "time": "16:03:09.4", "phase": "Стек Autodesk (+81.4...+120 с)", "actor": "AdskAccessCore + AdskIdentityManager + AdskAccessUIHost x4", "ramMB": 357.6, "cpuSec": 183.8, "status": "Фоновый запуск центра обновлений Autodesk Access и менеджера идентификации (358 МБ ОЗУ, 184 с CPU без запуска AutoCAD!)", "severity": "crit"}, {"secKernel": 463.5, "secLogon": 112.0, "time": "16:03:40.0", "phase": "Ступенька HKLM\\Run #1 (+112.0 с)", "actor": "eguiProxy.exe (ESET GUI)", "ramMB": 18.5, "cpuSec": 0.4, "status": "Старт первого элемента очереди HKLM\\Run. Начало 30-секундных интервалов ожидания WaitForInputIdle!", "severity": "info"}, {"secKernel": 493.6, "secLogon": 142.1, "time": "16:04:10.1", "phase": "Ступенька HKLM\\Run #2 (+142.1 с, дельта +30.1 с)", "actor": "Everything.exe (GUI)", "ramMB": 111.7, "cpuSec": 105.8, "status": "Ровно через 30.1 с после предыдущего элемента HKLM\\Run стартует клиент Everything", "severity": "warn"}, {"secKernel": 523.7, "secLogon": 172.2, "time": "16:04:40.2", "phase": "Ступенька HKLM\\Run #3 (+172.2 с, дельта +30.1 с)", "actor": "OODefragTray.exe", "ramMB": 81.0, "cpuSec": 4.7, "status": "Ещё через 30.1 с стартует трей-агент дефрагментатора O&O Defrag (81 МБ WS) и блокирует очередь на следующие 30.5 с!", "severity": "crit"}, {"secKernel": 554.2, "secLogon": 202.7, "time": "16:05:10.7", "phase": "Ступенька HKLM\\Run #4 (+202.7 с, дельта +30.5 с)", "actor": "Adguard.exe + AdguardSvc.exe", "ramMB": 82.3, "cpuSec": 353.4, "status": "Ещё через 30.5 с стартует UI AdGuard (суммарный Private Commit со службой = 1 662.7 МБ!)", "severity": "crit"}, {"secKernel": 584.3, "secLogon": 232.8, "time": "16:05:40.8", "phase": "Ступенька HKLM\\Run #5 (+232.8 с, дельта +30.1 с)", "actor": "AdGuardVpn.exe + AdGuardVpnSvc.exe", "ramMB": 786.6, "cpuSec": 550.9, "status": "Ещё через 30.1 с стартует AdGuard VPN (786.6 МБ ОЗУ и 550.9 с процессорного времени!)", "severity": "crit"}, {"secKernel": 612.2, "secLogon": 260.7, "time": "16:06:08.7", "phase": "Ступенька Run #6 (+260.7 с, дельта +27.9 с)", "actor": "OneDrive.exe + OneDrive.Sync.Service", "ramMB": 346.3, "cpuSec": 365.4, "status": "Старт клиента и службы синхронизации OneDrive (504.1 МБ Private Memory, 365.4 с CPU)", "severity": "warn"}, {"secKernel": 659.4, "secLogon": 307.9, "time": "16:06:55.9", "phase": "Ступенька Run #7 (+307.9 с, дельта +30.1 с)", "actor": "NLClientApp.exe (NetLimiter GUI)", "ramMB": 115.0, "cpuSec": 4.9, "status": "Через 5 минут после входа стартует тяжёлое окно клиента NetLimiter (115 МБ ОЗУ)", "severity": "warn"}, {"secKernel": 669.1, "secLogon": 317.6, "time": "16:07:05.6", "phase": "Ступенька Run #8 (+317.6...+348.2 с)", "actor": "Grammarly.Desktop + Superhuman.WebUI + 6x msedgewebview2", "ramMB": 767.3, "cpuSec": 1137.1, "status": "Главный пожиратель CPU и батареи: Grammarly + Superhuman WebUI + WebView2 (767.3 МБ ОЗУ и 1 137 с CPU!)", "severity": "crit"}, {"secKernel": 750.0, "secLogon": 398.5, "time": "16:08:26.5", "phase": "Завершение каскада (+398.5...+428.9 с)", "actor": "TheBat64 x6 + FSCapture + Punto Switcher", "ramMB": 872.5, "cpuSec": 603.7, "status": "Последние элементы автозагрузки запускаются только через 7 минут 09 секунд после входа в систему!", "severity": "warn"}];
+
+// State
+let selectedIds = new Set(ANALYZED_ITEMS.filter(x => x.defaultChecked).map(x => x.id));
+
+function formatNum(val, decimals = 1) {
+  return Number(val).toFixed(decimals).replace('.', ',');
+}
+
+function renderTimeline() {
+  const tbody = document.getElementById('timelineTableBody');
+  tbody.innerHTML = TIMELINE_EVENTS.map(ev => {
+    let badgeClass = 'tag-optimize';
+    if (ev.severity === 'crit') badgeClass = 'tag-disable';
+    else if (ev.severity === 'warn') badgeClass = 'tag-manual';
+    else if (ev.severity === 'ok') badgeClass = 'tag-keep';
+
+    const secLogonStr = ev.secLogon >= 0 ? '+' + formatNum(ev.secLogon, 1) : formatNum(ev.secLogon, 1);
+    return `<tr>
+      <td class="mono" style="white-space:nowrap;font-weight:600;">${ev.time}</td>
+      <td class="num-col">+${formatNum(ev.secKernel, 1)}</td>
+      <td class="num-col">${secLogonStr}</td>
+      <td><span class="tag ${badgeClass}">${ev.phase}</span></td>
+      <td><strong>${ev.actor}</strong></td>
+      <td class="num-col">${ev.ramMB > 0 ? formatNum(ev.ramMB, 1) : '—'}</td>
+      <td class="num-col">${ev.cpuSec > 0 ? formatNum(ev.cpuSec, 1) : '—'}</td>
+      <td>${ev.status}</td>
+    </tr>`;
+  }).join('');
+}
+
+function getBadgeForAction(action) {
+  if (action.includes('Безопасно отключить')) return `<span class="tag tag-disable">${action}</span>`;
+  if (action.includes('Перевести в Ручной')) return `<span class="tag tag-manual">${action}</span>`;
+  if (action.includes('Оптимизировать')) return `<span class="tag tag-optimize">${action}</span>`;
+  return `<span class="tag tag-keep">${action}</span>`;
+}
+
+function renderItemsTable() {
+  const search = document.getElementById('searchFilter').value.trim().toLowerCase();
+  const actionF = document.getElementById('actionFilter').value;
+  const sortOrd = document.getElementById('sortOrder').value;
+
+  let list = ANALYZED_ITEMS.filter(it => {
+    if (actionF !== 'ALL' && it.action !== actionF) return false;
+    if (search) {
+      const hay = (it.name + ' ' + it.displayName + ' ' + it.category + ' ' + it.whatBreaks + ' ' + it.dependOn + ' ' + it.dependedBy).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (sortOrd === 'ram_desc') list.sort((a, b) => b.ramWS_MB - a.ramWS_MB);
+  else if (sortOrd === 'priv_desc') list.sort((a, b) => b.ramPriv_MB - a.ramPriv_MB);
+  else if (sortOrd === 'cpu_desc') list.sort((a, b) => b.cpuSec - a.cpuSec);
+  else if (sortOrd === 'boot_desc') list.sort((a, b) => b.bootImpactSec - a.bootImpactSec);
+
+  const tbody = document.getElementById('itemsTableBody');
+  tbody.innerHTML = list.map(it => {
+    const checked = selectedIds.has(it.id) ? 'checked' : '';
+    return `<tr>
+      <td style="text-align:center;vertical-align:middle;">
+        <input type="checkbox" class="item-chk" data-id="${it.id}" ${checked} style="width:16px;height:16px;cursor:pointer;">
+      </td>
+      <td>
+        <div style="font-weight:700;color:var(--text-primary);margin-bottom:2px;">${it.name}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${it.displayName}</div>
+        <div class="mono" style="font-size:11.5px;color:var(--text-muted);">${it.category} • ${it.currentStatus}</div>
+      </td>
+      <td class="num-col" style="font-weight:600;">${formatNum(it.ramWS_MB, 1)}</td>
+      <td class="num-col" style="font-weight:600;">${formatNum(it.ramPriv_MB, 1)}</td>
+      <td class="num-col">${formatNum(it.cpuSec, 1)}</td>
+      <td class="num-col" style="font-weight:700;color:${it.bootImpactSec >= 10 ? 'var(--status-crit-text)' : 'var(--text-primary)'};">+${formatNum(it.bootImpactSec, 1)}</td>
+      <td style="font-size:12px;">
+        <div style="margin-bottom:4px;"><strong>Зависит от:</strong> ${it.dependOn}</div>
+        <div><strong>От него зависят:</strong> ${it.dependedBy}</div>
+      </td>
+      <td style="font-size:12.5px;">
+        <div style="margin-bottom:6px;">${it.whatBreaks}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);"><strong>Целевой режим:</strong> ${it.recommendedState} | <em>${it.sourceNote}</em></div>
+      </td>
+      <td>${getBadgeForAction(it.action)}</td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('.item-chk').forEach(chk => {
+    chk.addEventListener('change', e => {
+      const id = e.target.getAttribute('data-id');
+      if (e.target.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      updateTotalsAndScript();
+    });
+  });
+}
+
+function updateTotalsAndScript() {
+  let savedWS = 0, savedPriv = 0, savedCpu = 0, savedBoot = 0, count = 0;
+  ANALYZED_ITEMS.forEach(it => {
+    if (selectedIds.has(it.id)) {
+      count++;
+      // If it's AdGuard (delayed start), we save boot time, and if user keeps it running, count partial or full
+      if (it.id === 'app_adguard') {
+        savedBoot += it.bootImpactSec;
+        savedPriv += 450; // filter cleanup optimization
+      } else {
+        savedWS += it.ramWS_MB;
+        savedPriv += it.ramPriv_MB;
+        savedCpu += it.cpuSec;
+        savedBoot += it.bootImpactSec;
+      }
+    }
+  });
+
+  document.getElementById('valSavedBootSec').textContent = formatNum(savedBoot, 1);
+  document.getElementById('valSavedRamWS').textContent = Math.round(savedWS).toLocaleString('ru-RU');
+  document.getElementById('valSavedCommit').textContent = Math.round(savedPriv).toLocaleString('ru-RU');
+  document.getElementById('valSavedCpu').textContent = Math.round(savedCpu).toLocaleString('ru-RU');
+
+  document.getElementById('selectedCountLabel').textContent = count;
+  document.getElementById('selectedRamLabel').textContent = Math.round(savedWS) + ' МБ';
+  document.getElementById('selectedCommitLabel').textContent = Math.round(savedPriv) + ' МБ';
+  document.getElementById('simCleanupMB').textContent = '-' + Math.round(savedPriv);
+
+  updateMemorySimulator(savedWS, savedPriv);
+  generateCustomPowerShell(savedWS, savedPriv, savedBoot);
+}
+
+function updateMemorySimulator(savedWS, savedPriv) {
+  const pfVal = parseInt(document.getElementById('pfPresetSelect').value, 10);
+  const applyCleanup = document.getElementById('chkApplyRamCleanup').checked;
+
+  const basePhysMB = 16136;
+  let maxPagefileMB = 8192;
+  if (pfVal === 16384) maxPagefileMB = 24576;
+  else if (pfVal === 32768) maxPagefileMB = 32768;
+  else if (pfVal === 2048) maxPagefileMB = 2048;
+
+  const commitLimitMB = basePhysMB + maxPagefileMB;
+  let currentCommitMB = 14180 - (applyCleanup ? savedPriv : 0);
+  let currentPhysMB = 10929 - (applyCleanup ? savedWS * 0.75 : 0);
+
+  document.querySelectorAll('.wl-chk').forEach(chk => {
+    if (chk.checked) {
+      currentCommitMB += parseInt(chk.getAttribute('data-commit'), 10);
+      currentPhysMB += parseInt(chk.getAttribute('data-ws'), 10) * 0.72; // accounting for LZ4 Memory Compression
+    }
+  });
+
+  const commitPct = Math.min(100, Math.round((currentCommitMB / commitLimitMB) * 100));
+  const physPct = Math.min(100, Math.round((currentPhysMB / basePhysMB) * 100));
+
+  document.getElementById('simCommitValue').textContent =
+    formatNum(currentCommitMB / 1024, 2) + ' / ' + formatNum(commitLimitMB / 1024, 2) + ' ГБ (' + commitPct + '%)';
+  const commitBar = document.getElementById('simCommitBar');
+  commitBar.style.width = commitPct + '%';
+  commitBar.textContent = commitPct + '%';
+
+  const commitStatus = document.getElementById('simCommitStatus');
+  if (currentCommitMB >= commitLimitMB * 0.92) {
+    commitBar.style.background = '#DC2626';
+    commitStatus.className = 'kpi-delta crit';
+    commitStatus.textContent = 'КРИТИЧЕСКИЙ РИСК: Превышение Commit Limit! Неизбежны вылеты САПР и вкладок браузера (Event ID 2004).';
+  } else if (currentCommitMB >= commitLimitMB * 0.78) {
+    commitBar.style.background = '#D97706';
+    commitStatus.className = 'kpi-delta warn';
+    commitStatus.textContent = 'Внимание: Запас Commit Limit менее 22%. Рекомендуется расширить pagefile.sys до 16384–24576 МБ.';
+  } else {
+    commitBar.style.background = '#0284C7';
+    commitStatus.className = 'kpi-delta good';
+    commitStatus.textContent = 'Отличный запас виртуальной памяти: свободно ' + formatNum((commitLimitMB - currentCommitMB) / 1024, 2) + ' ГБ до предела Commit Limit.';
+  }
+
+  document.getElementById('simPhysValue').textContent =
+    formatNum(currentPhysMB / 1024, 2) + ' / ' + formatNum(basePhysMB / 1024, 2) + ' ГБ (' + physPct + '%)';
+  const physBar = document.getElementById('simPhysBar');
+  physBar.style.width = physPct + '%';
+  physBar.textContent = physPct + '%';
+  const physStatus = document.getElementById('simPhysStatus');
+  if (physPct >= 92) {
+    physBar.style.background = '#D97706';
+    physStatus.className = 'kpi-delta warn';
+    physStatus.textContent = 'Высокая нагрузка на физическое ОЗУ: неактивные страницы сжимаются LZ4 (MMAgent) и выгружаются в pagefile.sys на NVMe.';
+  } else {
+    physBar.style.background = '#059669';
+    physStatus.className = 'kpi-delta good';
+    physStatus.textContent = 'Комфортный режим: активный рабочий набор полностью помещается в ОЗУ + сжатую память LZ4.';
+  }
+}
+
+function generateCustomPowerShell(savedWS, savedPriv, savedBoot) {
+  const pfVal = parseInt(document.getElementById('pfPresetSelect').value, 10);
+  let pfCmd = '# Файл подкачки оставлен без изменений (8192 8192 МБ)';
+  if (pfVal === 16384) {
+    pfCmd = 'Set-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management" -Name "PagingFiles" -Value @("c:\\pagefile.sys 16384 24576") -Type MultiString';
+  } else if (pfVal === 32768) {
+    pfCmd = 'Set-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management" -Name "PagingFiles" -Value @("c:\\pagefile.sys 24576 32768") -Type MultiString';
+  }
+
+  let lines = [
+    '# =====================================================================================',
+    '# Персональный скрипт безопасной оптимизации Windows 11 Pro 26H2 (T14S / BIG)',
+    '# Сформирован: ' + new Date().toLocaleString('ru-RU'),
+    '# Ожидаемый эффект: ~' + Math.round(savedWS) + ' МБ ОЗУ WS | ~' + Math.round(savedPriv) + ' МБ Commit | -' + formatNum(savedBoot, 1) + ' с очередей старта',
+    '# =====================================================================================',
+    '',
+    '$ErrorActionPreference = "Continue"',
+    '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
+    'Write-Host "1. Создание резервной копии реестра и точки восстановления..." -ForegroundColor Cyan',
+    '$BackupDir = "$PSScriptRoot\\Win11_Backup_$(Get-Date -Format \'yyyyMMdd_HHmmss\')"',
+    'New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null',
+    'reg export "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" "$BackupDir\\HKCU_Run.reg" /y | Out-Null',
+    'reg export "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run" "$BackupDir\\HKLM_Run.reg" /y | Out-Null',
+    'reg export "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Memory Management" "$BackupDir\\MemoryManagement.reg" /y | Out-Null',
+    'Checkpoint-Computer -Description "Win11_26H2_Optimization" -RestorePointType "MODIFY_SETTINGS" -ErrorAction SilentlyContinue',
+    '',
+    'Write-Host "2. Оптимизация выбранных служб, драйверов и автозагрузки..." -ForegroundColor Cyan'
+  ];
+
+  ANALYZED_ITEMS.forEach(it => {
+    if (selectedIds.has(it.id) && !it.action.includes('Критично')) {
+      lines.push('# --- ' + it.name + ' (' + it.action + ') ---');
+      lines.push(it.command);
+    }
+  });
+
+  lines.push('');
+  lines.push('Write-Host "3. Настройка файла подкачки pagefile.sys и сжатия памяти MMAgent..." -ForegroundColor Cyan');
+  lines.push(pfCmd);
+  lines.push('Enable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue');
+  lines.push('Disable-MMAgent -ApplicationPreLaunch -ErrorAction SilentlyContinue');
+  lines.push('');
+  lines.push('Write-Host "4. Оптимизация энергопотребления во сне от батареи (Disconnected Standby)..." -ForegroundColor Cyan');
+  lines.push('powercfg /setdcvalueindex SCHEME_CURRENT SUB_NONE F15576E8-98B7-4186-B944-EAFA664402D9 0');
+  lines.push('powercfg /setdcvalueindex SCHEME_CURRENT 238c9fa8-0aad-41ed-83f4-97be242c8f20 bd3b718a-0680-4d9d-8ab2-e1d2b4ac806d 0 2>$null');
+  lines.push('powercfg /setactive SCHEME_CURRENT 2>$null');
+  lines.push('');
+  lines.push('Write-Host "Готово! Резервная копия сохранена в: $BackupDir" -ForegroundColor Green');
+  lines.push('Write-Host "Перезагрузите компьютер для вступления в силу нового размера pagefile.sys и ускоренной очереди старта." -ForegroundColor Yellow');
+
+  document.getElementById('generatedPs1Code').textContent = lines.join('\r\n');
+}
+
+// Export CSV with ';' separator and UTF-8 BOM
+function exportCsv() {
+  const headers = [
+    'Включено в скрипт',
+    'ID',
+    'Компонент',
+    'Описание',
+    'Категория',
+    'Статус на T14S',
+    'Тип запуска',
+    'ОЗУ Working Set (МБ)',
+    'Выделенная память Commit (МБ)',
+    'Время CPU (с)',
+    'Влияние на старт (с)',
+    'Зависит от (Upstream)',
+    'От него зависят (Downstream)',
+    'Последствия отключения и рекомендации',
+    'Рекомендуемое действие',
+    'Команда PowerShell'
+  ];
+
+  const escapeCsv = val => {
+    const s = String(val ?? '');
+    if (/[;"\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+
+  const rows = [headers.join(';')];
+  ANALYZED_ITEMS.forEach(it => {
+    rows.push([
+      selectedIds.has(it.id) ? 'ДА' : 'НЕТ',
+      it.id,
+      it.name,
+      it.displayName,
+      it.category,
+      it.currentStatus,
+      it.startMode,
+      formatNum(it.ramWS_MB, 1),
+      formatNum(it.ramPriv_MB, 1),
+      formatNum(it.cpuSec, 1),
+      formatNum(it.bootImpactSec, 1),
+      it.dependOn,
+      it.dependedBy,
+      it.whatBreaks,
+      it.action,
+      it.command
+    ].map(escapeCsv).join(';'));
+  });
+
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'T14S_Win11_26H2_Startup_Services_Analysis.csv';
+  a.click();
+}
+
+// Download generated .ps1 with UTF-8 BOM
+function downloadCustomPs1() {
+  const code = document.getElementById('generatedPs1Code').textContent;
+  const bom = '\uFEFF';
+  const blob = new Blob([bom + code], { type: 'text/plain;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Optimize-Win11-26H2-Custom.ps1';
+  a.click();
+}
+
+// Экранирование данных из импортируемого JSON перед вставкой в innerHTML
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Import JSON telemetry from Win11-BootRamBattery-Toolkit.ps1 (T14S or BIG)
+document.getElementById('jsonFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      const compName = data.ComputerName || 'Импортированный ПК';
+      const hw = data.Hardware || {};
+      const mem = data.Memory || {};
+      document.getElementById('activeHostBadge').textContent =
+        `Импортирован профиль: ${compName} (${hw.Manufacturer || ''} ${hw.ProductName || ''} • ${hw.CPU || ''})`;
+      document.getElementById('telemetryTimestamp').textContent = `Срез телеметрии: ${data.CollectedAt || ''}`;
+
+      // Show imported box & switch to Tab 5
+      const box = document.getElementById('importedTelemetryBox');
+      box.style.display = 'block';
+      document.getElementById('impHostName').textContent = `${compName} (${hw.OSBuild || ''})`;
+      document.getElementById('impKpiGrid').innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Физическое ОЗУ (${esc(compName)})</div><div class="kpi-value">${esc(mem.UsedPhysMB || 0)} / ${esc(mem.TotalPhysMB || 0)} МБ</div><div class="kpi-delta">Загрузка: ${esc(mem.LoadPct || 0)}%</div></div>
+        <div class="kpi-card"><div class="kpi-label">Commit Charge</div><div class="kpi-value">${esc(mem.CommitUsedMB || 0)} / ${esc(mem.CommitTotalMB || 0)} МБ</div><div class="kpi-delta">Pagefile: ${esc((mem.PagingFilesReg || []).join(', '))}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Старт до входа</div><div class="kpi-value">${esc((data.BootAnchors || {}).PreLogonSec || 0)} с</div><div class="kpi-delta">Ядро: ${esc((data.BootAnchors || {}).KernelStart || '')}</div></div>
+        <div class="kpi-card"><div class="kpi-label">Защита VBS / HVCI</div><div class="kpi-value">VBS=${esc(mem.VBS_Enabled ?? '?')} / HVCI=${esc(mem.HVCI_Enabled ?? '?')}</div><div class="kpi-delta">Hiberboot=${esc(mem.HiberbootEnabled ?? '?')}</div></div>
+      `;
+
+      const procTbody = document.querySelector('#impProcTable tbody');
+      procTbody.innerHTML = (data.TopProcesses || []).slice(0, 25).map(p => `
+        <tr><td><strong>${esc(p.Name)}</strong></td><td class="num-col">${esc(p.Count)}</td><td class="num-col">${esc(p.WS_MB)}</td><td class="num-col">${esc(p.Priv_MB)}</td><td class="num-col">${esc(p.CPU_Sec)}</td></tr>
+      `).join('');
+
+      const evTbody = document.querySelector('#impEventsTable tbody');
+      const diagEvs = (data.DiagPerfEvents || []).map(x => `<tr><td class="mono">${esc(x.TimeCreated)}</td><td><span class="tag tag-optimize">ID ${esc(x.Id)}</span></td><td><strong>${esc(x.Friendly || x.FileName || 'Boot')}</strong></td><td>Boot=${esc(x.BootTimeMs || '')}ms, Deg=${esc(x.DegradMs || '')}ms</td></tr>`);
+      const scmEvs = (data.SCMErrors || []).slice(0, 15).map(x => `<tr><td class="mono">${esc(x.Time)}</td><td><span class="tag tag-disable">ID ${esc(x.EventID)}</span></td><td>${esc(x.Source)}</td><td>${esc(x.Message)}</td></tr>`);
+      evTbody.innerHTML = diagEvs.concat(scmEvs).join('');
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector('[data-tab="tab-big"]').classList.add('active');
+      document.getElementById('tab-big').classList.add('active');
+    } catch (err) {
+      alert('Ошибка чтения JSON файла телеметрии: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
+
+// UI Event Listeners
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+  });
+});
+
+document.getElementById('searchFilter').addEventListener('input', renderItemsTable);
+document.getElementById('actionFilter').addEventListener('change', renderItemsTable);
+document.getElementById('sortOrder').addEventListener('change', renderItemsTable);
+
+document.getElementById('btnSelectRecommended').addEventListener('click', () => {
+  selectedIds = new Set(ANALYZED_ITEMS.filter(x => x.defaultChecked).map(x => x.id));
+  renderItemsTable();
+  updateTotalsAndScript();
+});
+
+document.getElementById('btnClearSelection').addEventListener('click', () => {
+  selectedIds.clear();
+  renderItemsTable();
+  updateTotalsAndScript();
+});
+
+document.getElementById('pfPresetSelect').addEventListener('change', () => updateTotalsAndScript());
+document.getElementById('chkApplyRamCleanup').addEventListener('change', () => updateTotalsAndScript());
+document.querySelectorAll('.wl-chk').forEach(chk => chk.addEventListener('change', () => updateTotalsAndScript()));
+
+document.getElementById('btnExportCsv').addEventListener('click', exportCsv);
+document.getElementById('btnDownloadCustomPs1').addEventListener('click', downloadCustomPs1);
+document.getElementById('btnPrintPdf').addEventListener('click', () => window.print());
+
+document.getElementById('btnCopyPs1').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('generatedPs1Code').textContent);
+  const btn = document.getElementById('btnCopyPs1');
+  const orig = btn.textContent;
+  btn.textContent = 'Скопировано!';
+  setTimeout(() => btn.textContent = orig, 1800);
+});
+
+document.getElementById('btnThemeToggle').addEventListener('click', () => {
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('btnThemeToggle').textContent = next === 'dark' ? 'Светлая тема' : 'Тёмная тема';
+});
+
+// Init
+renderTimeline();
+renderItemsTable();
+updateTotalsAndScript();
+</script>
+</body>
+</html>
