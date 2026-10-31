@@ -981,15 +981,15 @@ pre.code-box {
         <span class="tag tag-optimize">Поддержка локального сбора JSON за 10 секунд</span>
       </div>
       <p class="section-desc">
-        При попытке удалённого вызова команд на компьютере <strong>BIG (ASUS)</strong> системный агент вернул статус: <code>the Windows sandbox is not provisioned</code> (на BIG включён коннектор в списке устройств, но ещё не инициализирована локальная песочница удалённого выполнения PowerShell). Поэтому мы подготовили для вас **автономный скрипт <code>Win11-BootRamBattery-Toolkit.ps1</code>**, который запускается на <strong>BIG</strong> локально в один клик и формирует полный файл <code>Win11-Telemetry_BIG.json</code> для загрузки прямо в это окно!
+        При попытке удалённого вызова команд на компьютере <strong>BIG (ASUS)</strong> системный агент вернул статус: <code>the Windows sandbox is not provisioned</code> (на BIG включён коннектор в списке устройств, но ещё не инициализирована локальная песочница удалённого выполнения PowerShell). Поэтому мы подготовили для вас <strong>автономный скрипт <code>Win11-BootRamBattery-Toolkit.ps1</code></strong>, который запускается на <strong>BIG</strong> локально в один клик и формирует полный файл <code>Win11-Telemetry_BIG.json</code> для загрузки прямо в это окно!
       </p>
 
       <div class="grid-2">
         <div class="callout callout-info">
           <h4>Как проверить BIG (ASUS) за 30 секунд и загрузить данные сюда</h4>
           <p>
-            1. Скачайте файл <strong><code>Win11-BootRamBattery-Toolkit.ps1</code></strong> (кнопка во Вкладке 6 или в прикреплённых файлах проекта).<br>
-            2. Запустите его на компьютере <strong>BIG</strong> от имени Администратора и выберите пункт <code>[1] Собрать полную телеметрию</code>.<br>
+            1. Скачайте в одну папку <a href="Win11-BootRamBattery-Toolkit.ps1" download><code>Win11-BootRamBattery-Toolkit.ps1</code></a> и <a href="Start-Toolkit.cmd" download><code>Start-Toolkit.cmd</code></a>.<br>
+            2. Запустите на компьютере <strong>BIG</strong> двойным щелчком <code>Start-Toolkit.cmd</code> и выберите пункт <code>[1] Собрать полную телеметрию</code> (права администратора скрипт запросит сам через UAC).<br>
             3. Нажмите кнопку <strong>«Импорт JSON телеметрии (T14S / BIG)»</strong> в правом верхнем углу этой страницы и выберите созданный файл <code>Win11-Telemetry_BIG.json</code>.<br>
             4. Анализатор мгновенно отобразит все процессы, службы, зависимости, ошибки загрузки <code>Event ID 100–106</code> и настройки памяти компьютера <strong>BIG</strong>!
           </p>
@@ -1035,6 +1035,16 @@ pre.code-box {
       <p class="section-desc">
         Этот скрипт автоматически формируется в реальном времени на основе отмеченных вами галочек во <strong>Вкладке 2</strong> и выбранного режима файла подкачки во <strong>Вкладке 3</strong>. Перед внесением любых изменений скрипт автоматически создаёт точку восстановления системы и сохраняет резервную копию реестра (<code>Rollback</code>).
       </p>
+
+      <div class="callout callout-info">
+        <h4>Ошибка «файл не содержит цифровой подписи»</h4>
+        <p>
+          Windows помечает скачанные файлы как полученные из интернета, и при политике <code>RemoteSigned</code> (по умолчанию в PowerShell 7) запуск <code>.\файл.ps1</code> блокируется. Политику выполнения в системе менять не нужно — достаточно одного из вариантов:<br>
+          • снять отметку с конкретного файла: <code>Unblock-File .\Optimize-Win11-26H2-Custom.ps1</code>;<br>
+          • или запустить с разовым обходом только для этого процесса: <code>powershell -NoProfile -ExecutionPolicy Bypass -File .\Optimize-Win11-26H2-Custom.ps1</code>.<br>
+          Для основного скрипта <code>Win11-BootRamBattery-Toolkit.ps1</code> проще всего использовать <code>Start-Toolkit.cmd</code> рядом с ним.
+        </p>
+      </div>
 
       <pre class="code-box" id="generatedPs1Code"></pre>
     </div>
@@ -1246,6 +1256,7 @@ function generateCustomPowerShell(savedWS, savedPriv, savedBoot) {
     '# =====================================================================================',
     '# Персональный скрипт безопасной оптимизации Windows 11 Pro 26H2 (T14S / BIG)',
     '# Сформирован: ' + new Date().toLocaleString('ru-RU'),
+    '# Запуск в PowerShell от имени администратора: powershell -NoProfile -ExecutionPolicy Bypass -File .\\Optimize-Win11-26H2-Custom.ps1',
     '# Ожидаемый эффект: ~' + Math.round(savedWS) + ' МБ ОЗУ WS | ~' + Math.round(savedPriv) + ' МБ Commit | -' + formatNum(savedBoot, 1) + ' с очередей старта',
     '# =====================================================================================',
     '',

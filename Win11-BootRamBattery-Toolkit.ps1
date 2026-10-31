@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
     Win11 Boot / RAM / Battery Toolkit v2 — замер влияния программ на загрузку, ОЗУ и батарею
-    и обратимая оптимизация с журналом отката. Windows 10/11 (PowerShell 5.1 и 7.x).
+    и обратимая оптимизация с журналом отката. Windows 10/11. Работает в Windows PowerShell 5.1; из PowerShell 7 сам перезапускается в 5.1.
 
 .DESCRIPTION
     Режимы (-Mode):
@@ -33,6 +33,12 @@
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Win11-BootRamBattery-Toolkit.ps1 -Mode Apply -Level Medium -Exclude SVC_NLSVC,STARTUP_GOOGLEDRIVE
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Win11-BootRamBattery-Toolkit.ps1 -Mode Rollback
+
+.NOTES
+    Файл, скачанный из интернета, Windows помечает как полученный извне. При политике RemoteSigned
+    (по умолчанию в PowerShell 7) запуск «.\скрипт.ps1» блокируется: «не содержит цифровой подписи».
+    Варианты: Start-Toolkit.cmd рядом со скриптом; или Unblock-File .\Win11-BootRamBattery-Toolkit.ps1;
+    или powershell -NoProfile -ExecutionPolicy Bypass -File .\Win11-BootRamBattery-Toolkit.ps1
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
@@ -59,7 +65,7 @@ param(
 # 0. Инициализация
 # ----------------------------------------------------------------------------------------------
 $ErrorActionPreference = 'Continue'   # Stop ломает перехват stderr нативных утилит в PS 5.1
-$script:Version   = '2.0.0'
+$script:Version   = '2.0.1'
 $script:Cmdlet    = $PSCmdlet
 $script:CimProblems = @{}
 $script:ProcFallback = $false
@@ -74,6 +80,7 @@ $script:MeasureTaskName = 'PostLogonMeasure'
 $script:MeasureTaskPath = '\Win11Toolkit\'
 $script:Utf8Bom   = New-Object System.Text.UTF8Encoding($true)
 $script:Ru        = [Globalization.CultureInfo]::GetCultureInfo('ru-RU')
+$script:WinPS     = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 
 # -Include A,B через -File приходит одной строкой — нормализуем
 $Include = @($Include | ForEach-Object { "$_" -split '[,; ]' } | Where-Object { $_ } | ForEach-Object { $_.Trim().ToUpperInvariant() })
@@ -82,6 +89,32 @@ $Exclude = @($Exclude | ForEach-Object { "$_" -split '[,; ]' } | Where-Object { 
 if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
     Write-Warning 'Запущен 32-битный PowerShell: реестр будет перенаправлен (WOW6432Node). Запустите 64-битный powershell.exe.'
     exit 2
+}
+
+# Командная строка для перезапуска этого же скрипта (одной строкой для Start-Process)
+function Get-SelfArgList {
+    param([hashtable]$P)
+    $list = New-Object System.Collections.Generic.List[string]
+    foreach ($s in '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $PSCommandPath)) { $list.Add($s) }
+    foreach ($k in $P.Keys) {
+        $v = $P[$k]
+        if ($v -is [System.Management.Automation.SwitchParameter] -or $v -is [bool]) { if ([bool]$v) { $list.Add("-$k") } }
+        elseif ($v -is [array]) { if ($v.Count) { $list.Add("-$k"); $list.Add(('"{0}"' -f ($v -join ','))) } }
+        elseif ($null -ne $v -and "$v" -ne '') { $list.Add("-$k"); $list.Add(('"{0}"' -f ("$v" -replace '\\$', '\\'))) }   # «C:\» → «"C:\\"», иначе \" съест кавычку
+    }
+    if ($script:DryRun -and -not $P.ContainsKey('WhatIf')) { $list.Add('-WhatIf') }
+    return ,$list
+}
+
+# PowerShell 7 (Core): нет Checkpoint-Computer / Get-ComputerRestorePoint, а проверено всё в 5.1 —
+# перезапускаемся в Windows PowerShell 5.1 в том же окне с теми же параметрами
+if ($PSVersionTable.PSEdition -eq 'Core') {
+    if ($PSCommandPath -and (Test-Path -LiteralPath $script:WinPS)) {
+        Write-Host 'PowerShell 7: перезапуск в Windows PowerShell 5.1…' -ForegroundColor Yellow
+        $wp = Start-Process -FilePath $script:WinPS -ArgumentList ((Get-SelfArgList $script:Bound) -join ' ') -NoNewWindow -Wait -PassThru
+        exit $wp.ExitCode
+    }
+    Write-Warning 'Windows PowerShell 5.1 не найден: работа в PowerShell 7, точка восстановления будет недоступна.'
 }
 
 if (-not ('W11Tk2.Native' -as [type])) {
@@ -142,17 +175,9 @@ function Invoke-SelfElevate {
     $p = @{} + $script:Bound
     foreach ($k in $Override.Keys) { $p[$k] = $Override[$k] }
     if (-not $p.ContainsKey('OutputDir')) { $p['OutputDir'] = $script:OutDir }
-    $list = New-Object System.Collections.Generic.List[string]
-    foreach ($s in '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $PSCommandPath)) { $list.Add($s) }
-    foreach ($k in $p.Keys) {
-        $v = $p[$k]
-        if ($v -is [System.Management.Automation.SwitchParameter] -or $v -is [bool]) { if ([bool]$v) { $list.Add("-$k") } }
-        elseif ($v -is [array]) { if ($v.Count) { $list.Add("-$k"); $list.Add(('"{0}"' -f ($v -join ','))) } }
-        elseif ($null -ne $v -and "$v" -ne '') { $list.Add("-$k"); $list.Add(('"{0}"' -f ("$v" -replace '\\$', '\\'))) }   # «C:\» → «"C:\\"», иначе \" съест кавычку
-    }
-    if ($script:DryRun -and -not $p.ContainsKey('WhatIf')) { $list.Add('-WhatIf') }
+    $list = Get-SelfArgList $p
     $list.Add('-Elevated')
-    $exe = Join-Path $PSHOME 'powershell.exe'
+    $exe = $script:WinPS
     if (-not (Test-Path -LiteralPath $exe)) { $exe = (Get-Process -Id $PID).Path }
     Write-Info 'Нужны права администратора — открываю окно с повышением (UAC)…' Yellow
     try { Start-Process -FilePath $exe -ArgumentList ($list -join ' ') -Verb RunAs -Wait -ErrorAction Stop }
@@ -1421,7 +1446,7 @@ function Register-PostLogonMeasure {
     Copy-Item -LiteralPath $PSCommandPath -Destination $copy -Force
     $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
     $arg = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "{0}" -Mode Collect -FromScheduledTask -MeasureDelaySec {1} -OutputDir "{2}"' -f $copy, $MeasureDelaySec, $script:OutDir
-    $action = New-ScheduledTaskAction -Execute (Join-Path $PSHOME 'powershell.exe') -Argument $arg
+    $action = New-ScheduledTaskAction -Execute $script:WinPS -Argument $arg
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
     $trigger.Delay = 'PT{0}S' -f $MeasureDelaySec
     $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Highest

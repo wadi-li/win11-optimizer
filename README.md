@@ -3,7 +3,8 @@
 Автономный HTML-анализатор и PowerShell-программа для оценки влияния автозагрузки, служб и фоновых процессов на время загрузки, расход оперативной памяти и время работы от батареи.
 
 - **Онлайн-анализатор:** https://wadi-li.github.io/win11-optimizer/
-- **Скрипт:** [`Win11-BootRamBattery-Toolkit.ps1`](Win11-BootRamBattery-Toolkit.ps1) (v2.0.0, PowerShell 5.1+)
+- **Скрипт:** [`Win11-BootRamBattery-Toolkit.ps1`](Win11-BootRamBattery-Toolkit.ps1) (v2.0.1, Windows PowerShell 5.1; из PowerShell 7 сам перезапускается в 5.1)
+- **Запуск двойным щелчком:** [`Start-Toolkit.cmd`](Start-Toolkit.cmd) — положите рядом со скриптом
 
 ## Возможности скрипта
 
@@ -17,6 +18,14 @@
 | `ScheduleMeasure` / `UnscheduleMeasure` | Задача замера времени загрузки после входа |
 | `BootTraceStart` / `BootTraceStop` / `BootTraceCancel` | Трассировка загрузки через WPR |
 | `ListCatalog` | Список правил каталога |
+
+## Запуск и ошибка «не содержит цифровой подписи»
+
+Windows помечает скачанные файлы как полученные из интернета. При политике `RemoteSigned` (по умолчанию в PowerShell 7) команда `.\Win11-BootRamBattery-Toolkit.ps1` блокируется с ошибкой «файл не содержит цифровой подписи». Политику выполнения в системе менять не нужно — выберите один вариант:
+
+1. Двойной щелчок по `Start-Toolkit.cmd` (лежит в той же папке): запускает Windows PowerShell 5.1 с `-ExecutionPolicy Bypass` только для этого процесса.
+2. Снять отметку «из интернета» с файла один раз: `Unblock-File .\Win11-BootRamBattery-Toolkit.ps1`, затем запускать как обычно.
+3. Разовый обход для одного запуска — как в примерах ниже.
 
 Пример безопасного запуска:
 
