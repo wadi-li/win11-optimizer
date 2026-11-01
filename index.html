@@ -1695,14 +1695,8 @@ const arr = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
 const num = v => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
 const fmtN = (v, d = 1) => v == null ? '—' : (Math.round(v * 10 ** d) / 10 ** d).toLocaleString('ru-RU');
 
-(function initToken() {
-  const qs = new URLSearchParams(location.search);
-  const t = qs.get('t');
-  try {
-    if (t) { sessionStorage.setItem('w11tk-token', t); history.replaceState(null, '', location.pathname); }
-    PNL.token = t || sessionStorage.getItem('w11tk-token');
-  } catch (e) { PNL.token = t; }
-})();
+// ключ остаётся в адресе (?t=…), чтобы панель работала и после обновления страницы; он действует только до остановки сервера
+PNL.token = new URLSearchParams(location.search).get('t');
 const pnlLocal = location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
 
 async function api(path, body) {
@@ -1917,7 +1911,6 @@ $id('btnPnlStop').addEventListener('click', async () => {
   if (!(await pnlConfirm('Остановить панель?', '<p>Локальный сервер в окне PowerShell завершится, кнопки 1 и 3 перестанут работать. Загруженные отчёты и сравнение на этой странице останутся.</p>', 'Остановить'))) return;
   try { await api('/api/shutdown', {}); } catch (e) { }
   PNL.online = false; clearTimeout(PNL.timer); setBusy(false);
-  try { sessionStorage.removeItem('w11tk-token'); } catch (e) { }
   setConn('off', 'Панель остановлена. Окно PowerShell можно закрыть.', 'Чтобы продолжить, снова запустите Start-Toolkit.cmd.');
   $id('btnPnlStop').classList.add('pnl-hidden'); renderPlan();
 });
