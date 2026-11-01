@@ -34,6 +34,11 @@
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File .\Win11-BootRamBattery-Toolkit.ps1 -Mode Rollback
 
+.EXAMPLE
+    powershell -NoProfile -ExecutionPolicy Bypass -File .\Win11-BootRamBattery-Toolkit.ps1 -Mode Panel
+    Веб-панель: локальный сервер на 127.0.0.1 со случайным портом и ключом; кнопки анализа, применения, отката и отчёта «до/после».
+    Start-Toolkit.cmd без параметров запускает именно этот режим.
+
 .NOTES
     Файл, скачанный из интернета, Windows помечает как полученный извне. При политике RemoteSigned
     (по умолчанию в PowerShell 7) запуск «.\скрипт.ps1» блокируется: «не содержит цифровой подписи».
@@ -43,12 +48,13 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [ValidateSet('Menu', 'Collect', 'Plan', 'Apply', 'Rollback', 'ScheduleMeasure', 'UnscheduleMeasure',
-                 'BootTraceStart', 'BootTraceStop', 'BootTraceCancel', 'ListCatalog')]
+                 'BootTraceStart', 'BootTraceStop', 'BootTraceCancel', 'ListCatalog', 'Panel')]
     [string]$Mode = 'Menu',
     [ValidateSet('None', 'Low', 'Medium')]
     [string]$Level = 'Low',
     [string[]]$Include = @(),
     [string[]]$Exclude = @(),
+    [string[]]$Only = @(),
     [string]$OutputDir,
     [switch]$StopNow,
     [switch]$NoRestorePoint,
@@ -58,14 +64,18 @@ param(
     [ValidateRange(30, 1800)][int]$MeasureDelaySec = 120,
     [switch]$FromScheduledTask,
     [switch]$Yes,
-    [Parameter(DontShow = $true)][switch]$Elevated
+    [ValidateRange(0, 65535)][int]$Port = 0,
+    [switch]$NoBrowser,
+    [switch]$NoElevate,
+    [Parameter(DontShow = $true)][switch]$Elevated,
+    [Parameter(DontShow = $true)][switch]$PanelChild
 )
 
 # ----------------------------------------------------------------------------------------------
 # 0. Инициализация
 # ----------------------------------------------------------------------------------------------
 $ErrorActionPreference = 'Continue'   # Stop ломает перехват stderr нативных утилит в PS 5.1
-$script:Version   = '2.0.1'
+$script:Version   = '2.1.0'
 $script:Cmdlet    = $PSCmdlet
 $script:CimProblems = @{}
 $script:ProcFallback = $false
@@ -85,6 +95,13 @@ $script:WinPS     = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\p
 # -Include A,B через -File приходит одной строкой — нормализуем
 $Include = @($Include | ForEach-Object { "$_" -split '[,; ]' } | Where-Object { $_ } | ForEach-Object { $_.Trim().ToUpperInvariant() })
 $Exclude = @($Exclude | ForEach-Object { "$_" -split '[,; ]' } | Where-Object { $_ } | ForEach-Object { $_.Trim().ToUpperInvariant() })
+$Only    = @($Only    | ForEach-Object { "$_" -split '[,; ]' } | Where-Object { $_ } | ForEach-Object { $_.Trim().ToUpperInvariant() })
+if ($PanelChild) {
+    # дочерний процесс веб-панели: вывод в UTF-8 без подтверждений
+    try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false) } catch { }
+    $ProgressPreference = 'SilentlyContinue'
+    $Yes = [switch]$true
+}
 
 if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
     Write-Warning 'Запущен 32-битный PowerShell: реестр будет перенаправлен (WOW6432Node). Запустите 64-битный powershell.exe.'
@@ -180,7 +197,8 @@ function Invoke-SelfElevate {
     $exe = $script:WinPS
     if (-not (Test-Path -LiteralPath $exe)) { $exe = (Get-Process -Id $PID).Path }
     Write-Info 'Нужны права администратора — открываю окно с повышением (UAC)…' Yellow
-    try { Start-Process -FilePath $exe -ArgumentList ($list -join ' ') -Verb RunAs -Wait -ErrorAction Stop }
+    $script:ElevateOk = $false
+    try { Start-Process -FilePath $exe -ArgumentList ($list -join ' ') -Verb RunAs -Wait -ErrorAction Stop; $script:ElevateOk = $true }
     catch { Write-Warning "Повышение прав отменено или не удалось: $($_.Exception.Message)" }
 }
 
@@ -467,6 +485,7 @@ function Get-Catalog {
 function Get-RiskRank { param([string]$Risk) switch ($Risk) { 'Низкий' { 1 } 'Средний' { 2 } default { 3 } } }
 function Test-Selected {
     param($Item)
+    if ($Only.Count) { return ($Only -contains $Item.Id) }   # из веб-панели: ровно отмеченные пункты
     if ($Exclude -contains $Item.Id) { return $false }
     if ($Include -contains $Item.Id) { return $true }
     $lvl = switch ($Level) { 'None' { 0 } 'Low' { 1 } 'Medium' { 2 } }
@@ -963,7 +982,8 @@ function Invoke-Collect {
         Memory = $mem; PagefileRecommendation = $pfr
         Power = $pwr; DiagPerfEvents = $b.DiagPerf; SCMErrors = $scm; Drivers = $drv
         StartupImpact = $script:Impact; RunGaps = $gaps; TopProcesses = $top
-        Plan = @($plan | Select-Object Id, Group, Risk, Selected, Status, Target, Current, Desired, Title)
+        Metrics = (Get-CollectMetrics $mem $plan)
+        Plan = @($plan | Select-Object Id, Group, Kind, Risk, Selected, Status, Target, Current, Desired, Title, Reason, Effect)
         Limitations = [ordered]@{ WmiUnavailable = @($script:CimProblems.Keys); ProcessFallback = $script:ProcFallback }
     }
     $jsonPath = Join-Path $script:OutDir "Win11-Telemetry_$base.json"
@@ -985,6 +1005,33 @@ function Invoke-Collect {
     Show-ShortSummary $mem $pfr
     if ($FromScheduledTask) {
         try { Unregister-ScheduledTask -TaskName $script:MeasureTaskName -TaskPath $script:MeasureTaskPath -Confirm:$false -ErrorAction Stop } catch { }
+    }
+}
+
+# Сводные показатели для отчёта эффективности «до/после»
+function Get-CollectMetrics {
+    param($Mem, $Plan)
+    $b = $script:Boot
+    $su = @($script:Impact | Where-Object { $_.Kind -ne 'Служба' })
+    $late = @($su | Where-Object { $null -ne $_.StartOffsetSec -and $_.StartOffsetSec -ge 0 -and $_.StartOffsetSec -le 1800 } | ForEach-Object { [double]$_.StartOffsetSec } | Sort-Object)
+    $d100 = $null
+    foreach ($r in @($b.DiagPerf | Where-Object { $_.Id -eq 100 })) {
+        try { $t = [datetime]::ParseExact($r.TimeCreated, 'yyyy-MM-dd HH:mm:ss.fff', [Globalization.CultureInfo]::InvariantCulture) } catch { continue }
+        if ($b.KernelStart -and $t -ge $b.KernelStart) { $d100 = $r; break }   # событие 100 именно этой загрузки
+    }
+    $priv = ($script:Procs | Measure-Object -Property PrivMB -Sum).Sum
+    return [ordered]@{
+        UptimeMin = $(if ($b.KernelStart) { [math]::Round(((Get-Date) - $b.KernelStart).TotalMinutes, 0) } else { $null })
+        PreLogonSec = $b.PreLogonSec; ScmSec = $b.ScmSec; DesktopAfterLogonSec = $b.DesktopAfterLogonSec
+        LastStartupAfterLogonSec = $(if ($late.Count) { $late[-1] } else { $null })
+        BootTimeMs = $(if ($d100) { $d100.BootTimeMs } else { $null }); MainPathMs = $(if ($d100) { $d100.MainPathMs } else { $null }); PostBootMs = $(if ($d100) { $d100.PostBootMs } else { $null })
+        MemUsedMB = $Mem.UsedPhysMB; MemLoadPct = $Mem.LoadPct; CommitUsedMB = $Mem.CommitUsedMB; CommitLimitMB = $Mem.CommitTotalMB
+        ProcessCount = @($script:Procs).Count; ProcPrivTotalMB = [math]::Round([double]$priv, 0)
+        StartupEnabled = @($su | Where-Object { $_.Enabled }).Count; StartupRunning = @($su | Where-Object { $_.Running }).Count
+        AutoServices3rd = @($script:Impact | Where-Object { $_.Kind -eq 'Служба' }).Count
+        HighImpact = @($script:Impact | Where-Object { $_.Impact -like 'Высокое*' }).Count
+        PlanPending = @($Plan | Where-Object { $_.Selected -and $_.Status -eq 'Изменить' }).Count
+        PlanDone = @($Plan | Where-Object { $_.Status -eq 'Уже так' }).Count
     }
 }
 
@@ -1492,6 +1539,263 @@ function Show-Catalog {
 }
 
 # ----------------------------------------------------------------------------------------------
+# 4b. Веб-панель: локальный HTTP-сервер только на 127.0.0.1 с одноразовым ключом
+# ----------------------------------------------------------------------------------------------
+if (-not ('W11Tk2.PanelJob' -as [type])) {
+    Add-Type -TypeDefinition @'
+using System;
+using System.Diagnostics;
+using System.Text;
+namespace W11Tk2 {
+public class PanelJob {
+    private readonly StringBuilder _sb = new StringBuilder();
+    private readonly object _lock = new object();
+    public Process Proc; public string Mode; public DateTime Started; public int Id;
+    public PanelJob(int id, string mode, string exe, string args) {
+        Id = id; Mode = mode; Started = DateTime.Now;
+        ProcessStartInfo psi = new ProcessStartInfo(exe, args);
+        psi.UseShellExecute = false; psi.CreateNoWindow = true;
+        psi.RedirectStandardOutput = true; psi.RedirectStandardError = true; psi.RedirectStandardInput = true;
+        psi.StandardOutputEncoding = Encoding.UTF8; psi.StandardErrorEncoding = Encoding.UTF8;
+        Proc = new Process(); Proc.StartInfo = psi;
+        Proc.OutputDataReceived += (s, e) => { if (e.Data != null) Append(e.Data); };
+        Proc.ErrorDataReceived += (s, e) => { if (e.Data != null) Append("[ошибка] " + e.Data); };
+        Proc.Start(); Proc.StandardInput.Close(); Proc.BeginOutputReadLine(); Proc.BeginErrorReadLine();
+    }
+    public void Append(string line) { lock (_lock) { if (_sb.Length < 4000000) _sb.AppendLine(line); } }
+    public string Text { get { lock (_lock) { return _sb.ToString(); } } }
+    public bool Running { get { if (!Proc.HasExited) return true; Proc.WaitForExit(); return false; } }   // WaitForExit() дожидается конца асинхронного вывода
+    public int ExitCode { get { return Proc.HasExited ? Proc.ExitCode : -1; } }
+    public void Kill() { try { if (!Proc.HasExited) Proc.Kill(); } catch { } }
+}
+}
+'@
+}
+
+$script:PanelReasons = @{ 200 = 'OK'; 400 = 'Bad Request'; 403 = 'Forbidden'; 404 = 'Not Found'; 405 = 'Method Not Allowed'; 409 = 'Conflict'; 413 = 'Payload Too Large'; 500 = 'Internal Server Error' }
+$script:Latin1 = [Text.Encoding]::GetEncoding(28591)
+$script:Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+function Read-PanelRequest {
+    param([Net.Sockets.NetworkStream]$Stream)
+    $Stream.ReadTimeout = 5000
+    $buf = New-Object byte[] 16384
+    $ms = New-Object IO.MemoryStream
+    $hdrEnd = -1
+    while ($hdrEnd -lt 0) {
+        $n = $Stream.Read($buf, 0, $buf.Length)
+        if ($n -le 0) { return $null }
+        $ms.Write($buf, 0, $n)
+        if ($ms.Length -gt 65536) { return $null }
+        $hdrEnd = $script:Latin1.GetString($ms.ToArray()).IndexOf("`r`n`r`n")
+    }
+    $all = $ms.ToArray()
+    $head = $script:Latin1.GetString($all, 0, $hdrEnd) -split "`r`n"
+    $rl = $head[0] -split ' '
+    if ($rl.Count -lt 2) { return $null }
+    $h = @{}
+    foreach ($line in @($head | Select-Object -Skip 1)) { $i = $line.IndexOf(':'); if ($i -gt 0) { $h[$line.Substring(0, $i).Trim().ToLowerInvariant()] = $line.Substring($i + 1).Trim() } }
+    $len = 0; if ($h.ContainsKey('content-length')) { [void][int]::TryParse($h['content-length'], [ref]$len) }
+    if ($len -gt 1048576) { return @{ TooLarge = $true } }
+    $body = New-Object IO.MemoryStream
+    $start = $hdrEnd + 4
+    if ($all.Length -gt $start) { $body.Write($all, $start, $all.Length - $start) }
+    while ($body.Length -lt $len) { $n = $Stream.Read($buf, 0, $buf.Length); if ($n -le 0) { break }; $body.Write($buf, 0, $n) }
+    $target = $rl[1]; $path = $target; $query = @{}
+    $q = $target.IndexOf('?')
+    if ($q -ge 0) {
+        $path = $target.Substring(0, $q)
+        foreach ($kv in ($target.Substring($q + 1) -split '&')) { $p = $kv -split '=', 2; if ($p[0]) { $query[[Uri]::UnescapeDataString($p[0])] = $(if ($p.Count -gt 1) { [Uri]::UnescapeDataString($p[1].Replace('+', ' ')) } else { '' }) } }
+    }
+    return @{ Method = $rl[0].ToUpperInvariant(); Path = $path; Query = $query; Headers = $h; Body = $script:Utf8NoBom.GetString($body.ToArray()) }
+}
+
+function Send-PanelResponse {
+    param([Net.Sockets.NetworkStream]$Stream, [int]$Code, [string]$Type, [byte[]]$Body)
+    if ($null -eq $Body) { $Body = New-Object byte[] 0 }
+    $hdr = "HTTP/1.1 $Code $($script:PanelReasons[$Code])`r`nContent-Type: $Type`r`nContent-Length: $($Body.Length)`r`n" +
+           "Cache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nX-Frame-Options: DENY`r`nReferrer-Policy: no-referrer`r`n" +
+           "Content-Security-Policy: default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self'; frame-ancestors 'none'`r`nConnection: close`r`n`r`n"
+    $hb = $script:Latin1.GetBytes($hdr)
+    $Stream.Write($hb, 0, $hb.Length)
+    if ($Body.Length) { $Stream.Write($Body, 0, $Body.Length) }
+    $Stream.Flush()
+}
+
+function Send-PanelJson {
+    param($Stream, [int]$Code, $Obj)
+    Send-PanelResponse $Stream $Code 'application/json; charset=utf-8' ($script:Utf8NoBom.GetBytes(($Obj | ConvertTo-Json -Depth 6 -Compress)))
+}
+
+function Get-PanelFiles {
+    $res = foreach ($f in @(Get-ChildItem -LiteralPath $script:OutDir -File -Filter '*.json' -ErrorAction SilentlyContinue)) {
+        $type = if ($f.Name -like 'Win11-Telemetry_*') { 'telemetry' } elseif ($f.Name -like 'Journal_*' -and $f.Name -notlike '*.rollback-*') { 'journal' } elseif ($f.Name -like '*.rollback-*') { 'rollback' } else { 'other' }
+        [pscustomobject]@{ Name = $f.Name; Type = $type; Size = $f.Length; Time = Format-Time $f.LastWriteTime }
+    }
+    return @($res | Sort-Object Time -Descending)
+}
+
+function Get-PanelJobInfo {
+    param($State, [switch]$WithLog, [int]$Since = 0)
+    $j = $State.Job
+    if (-not $j) { return $null }
+    $running = $j.Running   # читаем до текста: если процесс завершился, весь вывод уже в буфере
+    $o = [ordered]@{ Id = $j.Id; Mode = $j.Mode; Label = $State.JobLabel; Running = $running; ExitCode = $j.ExitCode; Started = Format-Time $j.Started }
+    if ($WithLog) {
+        $t = $j.Text
+        if ($Since -lt 0 -or $Since -gt $t.Length) { $Since = 0 }
+        $o.LogFrom = $Since; $o.LogLength = $t.Length; $o.Log = $t.Substring($Since)
+    }
+    return $o
+}
+
+function Start-PanelJob {
+    param($State, [string]$ModeName, [string]$Label, [string[]]$Extra = @())
+    $qt = { param([string]$s) '"' + ($s -replace '\\$', '\\') + '"' }
+    $a = @('-NoProfile', '-NonInteractive', '-OutputFormat', 'Text', '-ExecutionPolicy', 'Bypass', '-File', (& $qt $PSCommandPath),
+           '-Mode', $ModeName, '-OutputDir', (& $qt $script:OutDir), '-PanelChild', '-Yes') + $Extra
+    $State.JobSeq++
+    $State.JobLabel = $Label
+    $State.Job = New-Object W11Tk2.PanelJob -ArgumentList $State.JobSeq, $ModeName, $script:WinPS, ($a -join ' ')
+    Write-Info ("[{0}] Запущено: {1}" -f (Get-Date -Format 'HH:mm:ss'), $Label) Cyan
+}
+
+function Invoke-PanelApi {
+    param($Stream, $Req, $State)
+    $path = $Req.Path
+    if ($path -eq '/api/status') {
+        Send-PanelJson $Stream 200 ([ordered]@{ Ok = $true; Version = $script:Version; Computer = $script:PC; User = [Environment]::UserName
+            IsAdmin = $script:Sys.IsAdmin; IsLaptop = $script:Sys.IsLaptop; OutDir = $script:OutDir; Job = (Get-PanelJobInfo $State) }); return
+    }
+    if ($path -eq '/api/job') {
+        $since = 0; [void][int]::TryParse("$($Req.Query['since'])", [ref]$since)
+        Send-PanelJson $Stream 200 ([ordered]@{ Job = (Get-PanelJobInfo $State -WithLog -Since $since) }); return
+    }
+    if ($path -eq '/api/files') { Send-PanelJson $Stream 200 ([ordered]@{ Files = @(Get-PanelFiles) }); return }
+    if ($path -eq '/api/file') {
+        $name = "$($Req.Query['name'])"
+        $f = Get-PanelFiles | Where-Object { $_.Name -eq $name } | Select-Object -First 1   # только файлы из списка — без путей
+        if (-not $f) { Send-PanelJson $Stream 404 @{ Error = 'Файл не найден' }; return }
+        $txt = [IO.File]::ReadAllText((Join-Path $script:OutDir $f.Name), [Text.Encoding]::UTF8)   # BOM снимается при чтении
+        Send-PanelResponse $Stream 200 'application/json; charset=utf-8' ($script:Utf8NoBom.GetBytes($txt)); return
+    }
+    if ($Req.Method -ne 'POST') { Send-PanelJson $Stream 405 @{ Error = 'Нужен POST' }; return }
+    if ($path -eq '/api/shutdown') { Send-PanelJson $Stream 200 @{ Ok = $true }; $State.Stop = $true; return }
+    if ($path -eq '/api/cancel') { if ($State.Job) { $State.Job.Kill() }; Send-PanelJson $Stream 200 @{ Ok = $true }; return }
+    if ($path -ne '/api/run') { Send-PanelJson $Stream 404 @{ Error = 'Нет такого метода' }; return }
+
+    if ($State.Job -and $State.Job.Running) { Send-PanelJson $Stream 409 @{ Error = 'Уже выполняется другая операция — дождитесь её окончания.' }; return }
+    $b = $null
+    try { $b = $Req.Body | ConvertFrom-Json } catch { }
+    if (-not $b -or -not $b.Action) { Send-PanelJson $Stream 400 @{ Error = 'Некорректный запрос' }; return }
+    $whatIf = [bool]$b.WhatIf
+    $needAdmin = @{ apply = (-not $whatIf); rollback = (-not $whatIf); schedule = $true; unschedule = $true }
+    $act = "$($b.Action)".ToLowerInvariant()
+    if ($needAdmin[$act] -and -not $script:Sys.IsAdmin) { Send-PanelJson $Stream 403 @{ Error = 'Панель запущена без прав администратора: перезапустите Start-Toolkit.cmd и подтвердите UAC.' }; return }
+    $extra = New-Object System.Collections.Generic.List[string]
+    if ($whatIf) { $extra.Add('-WhatIf') }
+    switch ($act) {
+        'collect' { Start-PanelJob $State 'Collect' 'Анализ системы' }
+        'apply' {
+            $ids = @($b.Only | ForEach-Object { "$_".Trim().ToUpperInvariant() } | Where-Object { $_ })
+            $known = @($script:Catalog | ForEach-Object { $_.Id })
+            $bad = @($ids | Where-Object { $_ -notmatch '^[A-Z0-9_]{2,40}$' -or $known -notcontains $_ })
+            if (-not $ids.Count -or $bad.Count) { Send-PanelJson $Stream 400 @{ Error = ('Нет выбранных пунктов или неизвестные Id: ' + ($bad -join ', ')) }; return }
+            $extra.Add('-Only'); $extra.Add('"' + ($ids -join ',') + '"')
+            if ($b.NoRestorePoint) { $extra.Add('-NoRestorePoint') }
+            if ($b.StopNow) { $extra.Add('-StopNow') }
+            Start-PanelJob $State 'Apply' $(if ($whatIf) { "Пробный прогон, пунктов: $($ids.Count)" } else { "Применение, пунктов: $($ids.Count)" }) $extra
+        }
+        'rollback' {
+            $j = Get-PanelFiles | Where-Object { $_.Type -eq 'journal' -and $_.Name -eq "$($b.Journal)" } | Select-Object -First 1
+            if (-not $j) { Send-PanelJson $Stream 400 @{ Error = 'Журнал не найден' }; return }
+            $extra.Add('-RollbackFile'); $extra.Add('"' + (Join-Path $script:OutDir $j.Name) + '"')
+            Start-PanelJob $State 'Rollback' $(if ($whatIf) { "Пробный откат: $($j.Name)" } else { "Откат: $($j.Name)" }) $extra
+        }
+        'schedule'   { Start-PanelJob $State 'ScheduleMeasure' 'Замер после следующего входа' }
+        'unschedule' { Start-PanelJob $State 'UnscheduleMeasure' 'Отмена замера' }
+        default { Send-PanelJson $Stream 400 @{ Error = 'Неизвестное действие' }; return }
+    }
+    Send-PanelJson $Stream 200 ([ordered]@{ Ok = $true; Job = (Get-PanelJobInfo $State) })
+}
+
+function Invoke-PanelRequest {
+    param([Net.Sockets.TcpClient]$Client, $State)
+    $s = $Client.GetStream()
+    $req = Read-PanelRequest $s
+    if (-not $req) { return }
+    if ($req.TooLarge) { Send-PanelJson $s 413 @{ Error = 'Слишком большой запрос' }; return }
+    # защита от DNS rebinding и запросов с чужих сайтов
+    $hostOk = @("127.0.0.1:$($State.Port)", "localhost:$($State.Port)") -contains "$($req.Headers['host'])".ToLowerInvariant()
+    if (-not $hostOk) { Send-PanelResponse $s 403 'text/plain; charset=utf-8' ($script:Utf8NoBom.GetBytes('Forbidden')); return }
+    $origin = "$($req.Headers['origin'])"
+    if ($origin -and @("http://127.0.0.1:$($State.Port)", "http://localhost:$($State.Port)") -notcontains $origin.ToLowerInvariant()) {
+        Send-PanelResponse $s 403 'text/plain; charset=utf-8' ($script:Utf8NoBom.GetBytes('Forbidden')); return
+    }
+    if ($req.Path -like '/api/*') {
+        if ("$($req.Headers['x-toolkit-token'])" -cne $State.Token) { Send-PanelJson $s 403 @{ Error = 'Неверный ключ панели. Откройте ссылку из окна PowerShell заново.' }; return }
+        try { Invoke-PanelApi $s $req $State } catch { Send-PanelJson $s 500 @{ Error = $_.Exception.Message } }
+        return
+    }
+    if ($req.Method -ne 'GET') { Send-PanelResponse $s 405 'text/plain; charset=utf-8' $null; return }
+    if ($req.Path -eq '/' -or $req.Path -eq '/index.html') {
+        if ($State.Html -and (Test-Path -LiteralPath $State.Html)) { Send-PanelResponse $s 200 'text/html; charset=utf-8' ([IO.File]::ReadAllBytes($State.Html)); return }
+        $msg = '<!doctype html><meta charset="utf-8"><title>Win11 Toolkit</title><body style="font:15px Segoe UI,sans-serif;max-width:640px;margin:40px auto;line-height:1.5">' +
+               '<h2>Не найден index.html</h2><p>Положите файл <b>index.html</b> из архива Win11Toolkit.zip в одну папку со скриптом и перезапустите <b>Start-Toolkit.cmd</b>.</p></body>'
+        Send-PanelResponse $s 200 'text/html; charset=utf-8' ($script:Utf8NoBom.GetBytes($msg)); return
+    }
+    if ($req.Path -eq '/favicon.ico') { Send-PanelResponse $s 404 'text/plain' $null; return }
+    Send-PanelResponse $s 404 'text/plain; charset=utf-8' ($script:Utf8NoBom.GetBytes('Not found'))
+}
+
+function Start-Panel {
+    $listener = New-Object System.Net.Sockets.TcpListener([Net.IPAddress]::Loopback, $Port)
+    try { $listener.Start() } catch { Write-Warning "Не удалось открыть порт ${Port}: $($_.Exception.Message)"; return }
+    $rnd = New-Object byte[] 24
+    $rng = [Security.Cryptography.RandomNumberGenerator]::Create(); $rng.GetBytes($rnd); $rng.Dispose()
+    $State = @{ Job = $null; JobSeq = 0; JobLabel = ''; Stop = $false; Port = $listener.LocalEndpoint.Port
+                Token = (-join ($rnd | ForEach-Object { $_.ToString('x2') }))
+                Html = $(if ($PSScriptRoot) { Join-Path $PSScriptRoot 'index.html' } else { $null }) }
+    $url = "http://127.0.0.1:$($State.Port)/?t=$($State.Token)"
+    Write-Step "Веб-панель Win11 Toolkit $script:Version — $script:PC [$(if ($script:Sys.IsAdmin) { 'администратор' } else { 'без прав администратора: только анализ' })]"
+    Write-Info "Адрес (только этот компьютер): $url" Green
+    Write-Info "Папка отчётов: $script:OutDir" DarkGray
+    if (-not (Test-Path -LiteralPath $State.Html)) { Write-Warning 'Рядом со скриптом нет index.html — панель покажет только подсказку. Распакуйте архив Win11Toolkit.zip целиком.' }
+    Write-Info 'Не закрывайте это окно, пока работаете в панели. Остановка: Ctrl+C или кнопка «Остановить панель».' Yellow
+    if (-not $NoBrowser) {
+        # из окна администратора открываем браузер через Проводник — он запустится с обычными правами
+        try { if ($script:Sys.IsAdmin) { Start-Process -FilePath 'explorer.exe' -ArgumentList ('"{0}"' -f $url) } else { Start-Process -FilePath $url } }
+        catch { Write-Warning "Не удалось открыть браузер: откройте адрес вручную." }
+    }
+    # Браузер заранее открывает «запасные» соединения без запроса, поэтому не ждём на них,
+    # а обслуживаем только те, где уже пришли данные (однопоточный цикл без зависаний)
+    $conns = New-Object System.Collections.Generic.List[object]
+    try {
+        while (-not $State.Stop) {
+            while ($listener.Pending()) { $conns.Add(@{ C = $listener.AcceptTcpClient(); T = [DateTime]::UtcNow }) }
+            $busy = $false
+            foreach ($cn in $conns.ToArray()) {
+                $c = $cn.C; $drop = $false
+                try {
+                    if ($c.Available -gt 0) {
+                        $busy = $true; $drop = $true
+                        try { Invoke-PanelRequest $c $State } catch { Write-Warning "Запрос не обработан: $($_.Exception.Message)" }
+                    } elseif (-not $c.Connected -or ([DateTime]::UtcNow - $cn.T).TotalSeconds -gt 60 -or
+                              ($c.Client.Poll(0, [Net.Sockets.SelectMode]::SelectRead) -and $c.Available -eq 0)) { $drop = $true }   # закрыто клиентом или простаивает
+                } catch { $drop = $true }
+                if ($drop) { try { $c.Close() } catch { }; [void]$conns.Remove($cn) }
+            }
+            if (-not $busy) { Start-Sleep -Milliseconds 30 }
+        }
+    } finally {
+        foreach ($cn in $conns) { try { $cn.C.Close() } catch { } }
+        $listener.Stop()
+        if ($State.Job -and $State.Job.Running) { Write-Warning 'Панель остановлена во время операции — операция продолжится в фоне до завершения.' }
+        Write-Info 'Веб-панель остановлена.' Gray
+    }
+}
+
+# ----------------------------------------------------------------------------------------------
 # 5. Меню и точка входа
 # ----------------------------------------------------------------------------------------------
 function Show-Menu {
@@ -1508,6 +1812,7 @@ function Show-Menu {
         Write-Host "  7  Запланировать замер через $MeasureDelaySec с после следующего входа"
         Write-Host '  8  Трассировка загрузки WPR: включить'
         Write-Host '  9  Трассировка загрузки WPR: сохранить'
+        Write-Host '  W  Веб-панель в браузере'
         Write-Host '  L  Каталог пунктов'
         Write-Host '  0  Выход'
         $c = (Read-Host 'Выбор').Trim().ToUpperInvariant()
@@ -1522,6 +1827,7 @@ function Show-Menu {
             '8' { Invoke-BootTrace Start }
             '9' { Invoke-BootTrace Stop }
             'L' { Show-Catalog }
+            'W' { Start-Panel }
             '0' { break menu }
             default { Write-Info 'Нет такого пункта.' Yellow }
         }
@@ -1551,6 +1857,14 @@ try {
         'BootTraceStop'     { Invoke-BootTrace Stop }
         'BootTraceCancel'   { Invoke-BootTrace Cancel }
         'ListCatalog'       { Show-Catalog }
+        'Panel' {
+            if (-not $script:Sys.IsAdmin -and -not $NoElevate) {
+                Invoke-SelfElevate @{ Mode = 'Panel' }
+                if ($script:ElevateOk) { break }
+                Write-Warning 'Панель запущена без прав администратора: доступны анализ, файлы и сравнение; применение и откат — нет.'
+            }
+            Start-Panel
+        }
     }
 } finally {
     if ($transcript) { try { Stop-Transcript | Out-Null } catch { } }

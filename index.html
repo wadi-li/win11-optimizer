@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
 <title>Анализатор загрузки, зависимостей, ОЗУ (16 ГБ) и батареи — Windows 11 Pro 26H2 (T14S &amp; BIG)</title>
 <style>
 :root, [data-theme="light"] {
@@ -554,6 +555,52 @@ pre.code-box {
     white-space: pre-wrap;
   }
 }
+
+/* ===== Панель управления (v2.1) ===== */
+.ctl-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.ctl-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ctl-head h2 { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.ctl-status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.ctl-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); flex: none; }
+.ctl-dot.on { background: #16A34A; }
+.ctl-dot.off { background: #D97706; }
+.ctl-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.ctl-step { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-subtle); color: var(--text-primary); font-family: var(--font-sans); cursor: pointer; transition: border-color .15s, background .15s; }
+.ctl-step:hover { border-color: var(--accent-primary); background: var(--accent-soft); }
+.ctl-step:disabled { opacity: .55; cursor: not-allowed; }
+.ctl-step .n { font-size: 12px; font-weight: 700; color: var(--accent-primary); text-transform: uppercase; letter-spacing: .04em; }
+.ctl-step .t { font-size: 14px; font-weight: 700; }
+.ctl-step .d { font-size: 12px; color: var(--text-muted); line-height: 1.35; }
+.ctl-sub { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: center; font-size: 12px; color: var(--text-muted); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-danger { background: var(--status-crit-bg); color: var(--status-crit-text); border-color: var(--status-crit-border); }
+.btn-danger:hover { filter: brightness(0.97); background: var(--status-crit-bg); border-color: var(--status-crit-text); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.pnl-log { font-family: var(--font-mono); font-size: 12px; line-height: 1.45; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; max-height: 360px; overflow: auto; white-space: pre-wrap; word-break: break-word; color: var(--text-secondary); }
+.pnl-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; align-items: end; }
+.pnl-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.pnl-field select, .pnl-field input[type=text] { font: 13px var(--font-sans); padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); }
+.pnl-row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+.pnl-chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-secondary); }
+.pnl-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pnl-table th, .pnl-table td { border-bottom: 1px solid var(--border-subtle); padding: 6px 8px; text-align: left; vertical-align: top; }
+.pnl-table th { background: var(--bg-subtle); color: var(--text-secondary); font-weight: 700; position: sticky; top: 0; }
+.pnl-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pnl-scroll { max-height: 460px; overflow: auto; border: 1px solid var(--border-color); border-radius: 6px; }
+.d-good { color: var(--status-ok-text); font-weight: 700; }
+.d-bad { color: var(--status-crit-text); font-weight: 700; }
+.d-zero { color: var(--text-muted); }
+.st-chip { display: inline-block; padding: 1px 7px; border-radius: 5px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--border-color); background: var(--bg-subtle); color: var(--text-secondary); white-space: nowrap; }
+.st-chip.chg { background: var(--status-warn-bg); color: var(--status-warn-text); border-color: var(--status-warn-border); }
+.st-chip.ok { background: var(--status-ok-bg); color: var(--status-ok-text); border-color: var(--status-ok-border); }
+.pnl-code { font-family: var(--font-mono); font-size: 12px; background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 10px; word-break: break-all; color: var(--text-primary); }
+.pnl-files li { margin: 4px 0; font-size: 13px; }
+.pnl-modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+.pnl-modal { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 10px; max-width: 560px; width: 100%; padding: 18px 20px; box-shadow: var(--shadow-md); }
+.pnl-modal h3 { font-size: 16px; margin-bottom: 8px; }
+.pnl-modal p { font-size: 13px; color: var(--text-secondary); margin: 6px 0; line-height: 1.45; }
+.pnl-hidden { display: none !important; }
+@media print { .ctl-card { display: none; } }
 </style>
 </head>
 <body>
@@ -578,6 +625,25 @@ pre.code-box {
       <button class="btn" id="btnThemeToggle" title="Переключить светлую / тёмную тему">Тёмная тема</button>
     </div>
   </header>
+
+  <!-- ПАНЕЛЬ УПРАВЛЕНИЯ (v2.1): кнопки работают через локальный сервер скрипта на 127.0.0.1 -->
+  <section class="ctl-card" id="ctlCard" aria-label="Панель управления">
+    <div class="ctl-head">
+      <h2>Панель управления</h2>
+      <span class="ctl-status"><span class="ctl-dot" id="pnlDot"></span><span id="pnlStatusText">Проверка подключения…</span></span>
+    </div>
+    <div class="ctl-steps">
+      <button class="ctl-step" id="stepCollect" type="button"><span class="n">Шаг 1</span><span class="t">Проанализировать систему</span><span class="d">Сбор загрузки, автозагрузки, служб, ОЗУ и батареи (1–3 мин). Ничего не меняет.</span></button>
+      <button class="ctl-step" id="stepLoad" type="button"><span class="n">Шаг 2</span><span class="t">Загрузить файл оценки</span><span class="d">Открыть JSON-отчёт: из папки отчётов или с диска (можно несколько).</span></button>
+      <button class="ctl-step" id="stepApply" type="button"><span class="n">Шаг 3</span><span class="t">Применить рекомендации</span><span class="d">Выбор пунктов, пробный прогон, применение с точкой восстановления, откат.</span></button>
+      <button class="ctl-step" id="stepDiff" type="button"><span class="n">Шаг 4</span><span class="t">Отчёт «до / после» (diff)</span><span class="d">Сравнение двух оценок: время загрузки, память, автозагрузка, статусы.</span></button>
+    </div>
+    <div class="ctl-sub">
+      <span id="pnlSubText">Кнопки 2 и 4 работают и без скрипта. Кнопки 1 и 3 — после запуска <code>Start-Toolkit.cmd</code> на этом ПК.</span>
+      <button class="btn btn-sm pnl-hidden" id="btnPnlStop" type="button" title="Остановить локальный сервер в окне PowerShell">Остановить панель</button>
+    </div>
+    <input type="file" id="pnlFileInput" accept=".json" multiple style="display:none">
+  </section>
 
   <!-- DYNAMIC KPI STRIP -->
   <section class="kpi-grid">
@@ -610,7 +676,8 @@ pre.code-box {
 
   <!-- NAVIGATION TABS -->
   <nav class="nav-tabs no-print">
-    <button class="tab-btn active" data-tab="tab-timeline">1. Посекундная хронология загрузки T14S</button>
+    <button class="tab-btn active" data-tab="tab-panel">0. Панель управления</button>
+    <button class="tab-btn" data-tab="tab-timeline">1. Посекундная хронология загрузки T14S</button>
     <button class="tab-btn" data-tab="tab-services">2. Программы, службы и граф зависимостей (33 узла)</button>
     <button class="tab-btn" data-tab="tab-memory">3. Калькулятор ОЗУ (16 ГБ) и файла подкачки pagefile.sys</button>
     <button class="tab-btn" data-tab="tab-battery">4. Батарея и спящий режим ThinkPad T14s (S0 vs S3)</button>
@@ -618,8 +685,130 @@ pre.code-box {
     <button class="tab-btn" data-tab="tab-script">6. Генератор PowerShell-скрипта и отката (Rollback)</button>
   </nav>
 
+  <!-- TAB 0: ПАНЕЛЬ УПРАВЛЕНИЯ -->
+  <div class="tab-panel active" id="tab-panel">
+
+    <div class="section-card" id="pnlHowto">
+      <div class="section-title"><span>Как включить кнопки «Проанализировать» и «Применить»</span><span class="tag tag-optimize">1 раз, 1 минута</span></div>
+      <p class="section-desc">
+        Страница в интернете (GitHub или pplx.app) не может запускать программы на компьютере — браузер это запрещает. Поэтому скрипт сам запускает эту же страницу у вас на ПК, но уже с рабочими кнопками. Сервер слушает только адрес <code>127.0.0.1</code> (недоступен из сети) и принимает команды только со случайным ключом, который выдаётся при каждом запуске.
+      </p>
+      <div class="grid-2">
+        <div class="callout callout-info">
+          <h4>Запуск</h4>
+          <p>
+            1. Скачайте архив <a href="Win11Toolkit.zip" download><code>Win11Toolkit.zip</code></a> (в нём <code>Start-Toolkit.cmd</code>, <code>Win11-BootRamBattery-Toolkit.ps1</code> и <code>index.html</code>) и распакуйте в любую папку, например <code>C:\Users\&lt;вы&gt;\Downloads\Win11Toolkit</code>.<br>
+            2. Дважды щёлкните <code>Start-Toolkit.cmd</code> и подтвердите запрос UAC (права администратора нужны для применения; без них работает только анализ).<br>
+            3. Браузер откроется сам по адресу вида <code>http://127.0.0.1:порт/?t=ключ</code>. Индикатор вверху станет зелёным.<br>
+            4. Не закрывайте окно PowerShell, пока работаете. Завершить — кнопка «Остановить панель» или Ctrl+C в окне.
+          </p>
+        </div>
+        <div class="callout callout-ok">
+          <h4>Что работает без скрипта</h4>
+          <p>
+            • <strong>Шаг 2</strong> — загрузка JSON-оценок, созданных скриптом (<code>Start-Toolkit.cmd -Mode Collect</code>).<br>
+            • <strong>Шаг 3</strong> — просмотр плана и готовая команда для выбранных пунктов (копируется в буфер).<br>
+            • <strong>Шаг 4</strong> — сравнение «до/после» двух загруженных JSON и экспорт в CSV.<br>
+            Отдельные файлы: <a href="Win11-BootRamBattery-Toolkit.ps1" download><code>ps1</code></a>, <a href="Start-Toolkit.cmd" download><code>cmd</code></a>, <a href="index.html" download="index.html"><code>index.html</code></a>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card pnl-hidden" id="pnlJobCard">
+      <div class="section-title"><span id="pnlJobTitle">Выполнение</span><span class="st-chip" id="pnlJobState">—</span></div>
+      <pre class="pnl-log" id="pnlLog"></pre>
+      <div class="pnl-row-actions">
+        <button class="btn btn-sm" id="btnPnlCancel" type="button">Прервать операцию</button>
+        <span class="pnl-chk" id="pnlJobHint"></span>
+      </div>
+    </div>
+
+    <div class="section-card" id="pnlFilesCard">
+      <div class="section-title"><span>Файлы оценки</span>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="btnPnlRefresh" type="button">Обновить список</button>
+          <button class="btn btn-sm" id="btnPnlPick" type="button">Открыть JSON с диска…</button>
+        </div>
+      </div>
+      <p class="section-desc" id="pnlFilesHint">Пока не загружено ни одной оценки.</p>
+      <div class="pnl-scroll pnl-hidden" id="pnlFilesWrap" style="max-height:280px">
+        <table class="pnl-table"><thead><tr><th>Файл</th><th>ПК</th><th>Собрано</th><th>Источник</th><th></th></tr></thead><tbody id="pnlFilesBody"></tbody></table>
+      </div>
+    </div>
+
+    <div class="section-card" id="pnlPlanCard">
+      <div class="section-title"><span>Рекомендации к применению <span id="pnlPlanSrc" style="font-weight:500;color:var(--text-muted)"></span></span>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="btnPlanRec" type="button">Отметить рекомендованные</button>
+          <button class="btn btn-sm" id="btnPlanNone" type="button">Снять все</button>
+        </div>
+      </div>
+      <p class="section-desc" id="pnlPlanHint">План появится после шага 1 или 2: в нём только пункты, проверенные скриптом на этом ПК. «Изменить» — настройка отличается от рекомендуемой; «Уже так» — менять нечего.</p>
+      <div class="pnl-scroll pnl-hidden" id="pnlPlanWrap">
+        <table class="pnl-table"><thead><tr><th></th><th>Id</th><th>Группа</th><th>Риск</th><th>Статус</th><th>Сейчас → будет</th><th>Что даёт</th></tr></thead><tbody id="pnlPlanBody"></tbody></table>
+      </div>
+      <div class="pnl-row-actions pnl-hidden" id="pnlPlanActions">
+        <label class="pnl-chk"><input type="checkbox" id="chkPnlRestore" checked> Создать точку восстановления</label>
+        <label class="pnl-chk"><input type="checkbox" id="chkPnlStopNow"> Сразу остановить отключаемые службы (иначе — после перезагрузки)</label>
+      </div>
+      <div class="pnl-row-actions pnl-hidden" id="pnlPlanButtons">
+        <button class="btn" id="btnPnlDry" type="button">Пробный прогон (ничего не меняет)</button>
+        <button class="btn btn-primary" id="btnPnlApply" type="button">Применить выбранные…</button>
+        <span class="pnl-chk" id="pnlPlanCount"></span>
+      </div>
+      <div class="pnl-hidden" id="pnlPlanCmd" style="margin-top:12px">
+        <p class="section-desc" style="margin-bottom:6px">Без запущенной панели выполните эту команду в папке со скриптом (сначала с <code>-WhatIf</code> — пробный прогон):</p>
+        <div class="pnl-code" id="pnlCmdText"></div>
+        <div class="pnl-row-actions"><button class="btn btn-sm" id="btnPnlCopyCmd" type="button">Скопировать команду</button></div>
+      </div>
+    </div>
+
+    <div class="section-card" id="pnlRollbackCard">
+      <div class="section-title"><span>Откат изменений</span></div>
+      <p class="section-desc">Каждое применение пишет журнал <code>Journal_&lt;ПК&gt;_&lt;время&gt;.json</code> с исходными значениями. Откат возвращает их в обратном порядке. Дополнительно остаётся точка восстановления Windows.</p>
+      <div class="pnl-grid2">
+        <label class="pnl-field">Журнал применения<select id="selPnlJournal"><option value="">— нет журналов —</option></select></label>
+        <div class="pnl-row-actions" style="margin-top:0">
+          <button class="btn" id="btnPnlRbDry" type="button">Пробный откат</button>
+          <button class="btn btn-danger" id="btnPnlRb" type="button">Откатить…</button>
+        </div>
+      </div>
+      <div class="pnl-row-actions">
+        <button class="btn btn-sm" id="btnPnlSchedule" type="button" title="Задача планировщика: через 2 минуты после следующего входа соберёт оценку PostLogon и удалит себя">Замер через 2 мин после следующего входа</button>
+        <button class="btn btn-sm" id="btnPnlUnschedule" type="button">Отменить замер</button>
+      </div>
+    </div>
+
+    <div class="section-card" id="pnlDiffCard">
+      <div class="section-title"><span>Отчёт эффективности «до / после»</span>
+        <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="btnDiffCsv" type="button" disabled>Экспорт CSV (;)</button>
+        </div>
+      </div>
+      <p class="section-desc">Выберите оценку до изменений и после них (после перезагрузки). Для честного сравнения оба замера делайте одинаково: лучше всего кнопкой «Замер через 2 мин после следующего входа» до и после применения. Зелёным — улучшение, красным — ухудшение.</p>
+      <div class="pnl-grid2">
+        <label class="pnl-field">До (базовая оценка)<select id="selDiffA"></select></label>
+        <label class="pnl-field">После<select id="selDiffB"></select></label>
+        <div class="pnl-row-actions" style="margin-top:0"><button class="btn btn-primary" id="btnDiffRun" type="button">Сравнить</button></div>
+      </div>
+      <div id="pnlDiffOut" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <div class="pnl-modal-bg" id="pnlModal" role="dialog" aria-modal="true" aria-labelledby="pnlModalTitle">
+    <div class="pnl-modal">
+      <h3 id="pnlModalTitle">Подтверждение</h3>
+      <div id="pnlModalBody"></div>
+      <div class="pnl-row-actions" style="justify-content:flex-end">
+        <button class="btn" id="btnModalNo" type="button">Отмена</button>
+        <button class="btn btn-primary" id="btnModalYes" type="button">Выполнить</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TAB 1: BOOT TIMELINE & ROOT CAUSE FORENSICS -->
-  <div class="tab-panel active" id="tab-timeline">
+  <div class="tab-panel" id="tab-timeline">
     <div class="section-card">
       <div class="section-title">
         <span>Диагноз медленной загрузки вашего ноутбука T14S (LENOVO 20T00034US)</span>
@@ -992,9 +1181,9 @@ pre.code-box {
         <div class="callout callout-info">
           <h4>Как проверить BIG (ASUS) за 30 секунд и загрузить данные сюда</h4>
           <p>
-            1. Скачайте в одну папку <a href="Win11-BootRamBattery-Toolkit.ps1" download><code>Win11-BootRamBattery-Toolkit.ps1</code></a> и <a href="Start-Toolkit.cmd" download><code>Start-Toolkit.cmd</code></a>.<br>
-            2. Запустите на компьютере <strong>BIG</strong> двойным щелчком <code>Start-Toolkit.cmd</code> и выберите пункт <code>[1] Собрать полную телеметрию</code> (права администратора скрипт запросит сам через UAC).<br>
-            3. Нажмите кнопку <strong>«Импорт JSON телеметрии (T14S / BIG)»</strong> в правом верхнем углу этой страницы и выберите созданный файл <code>Win11-Telemetry_BIG.json</code>.<br>
+            1. Скачайте архив <a href="Win11Toolkit.zip" download><code>Win11Toolkit.zip</code></a> (скрипт, <code>Start-Toolkit.cmd</code> и эта страница для веб-панели) и распакуйте в одну папку.<br>
+            2. Запустите на компьютере <strong>BIG</strong> двойным щелчком <code>Start-Toolkit.cmd</code> — откроется веб-панель; нажмите в ней <strong>«Проанализировать систему»</strong> (права администратора скрипт запросит сам через UAC). Консольное меню: <code>Start-Toolkit.cmd -Mode Menu</code>.<br>
+            3. Или перенесите созданный файл <code>Win11-Telemetry_BIG_….json</code> сюда кнопкой <strong>«Загрузить файл оценки»</strong> в панели управления.<br>
             4. Анализатор мгновенно отобразит все процессы, службы, зависимости, ошибки загрузки <code>Event ID 100–106</code> и настройки памяти компьютера <strong>BIG</strong>!
           </p>
         </div>
@@ -1495,6 +1684,544 @@ document.getElementById('btnThemeToggle').addEventListener('click', () => {
 renderTimeline();
 renderItemsTable();
 updateTotalsAndScript();
+
+// ===================== ПАНЕЛЬ УПРАВЛЕНИЯ (v2.1) =====================
+// Связь с локальным сервером скрипта (-Mode Panel) на 127.0.0.1 по одноразовому ключу.
+// Без сервера работают загрузка JSON, план (с готовой командой) и сравнение «до/после».
+const PNL = { online: false, token: null, status: null, reports: new Map(), journals: [], planKey: null,
+              planSel: new Set(), jobId: null, since: 0, timer: null, busy: false, lastDiff: null, seq: 0 };
+const $id = id => document.getElementById(id);
+const arr = v => v == null ? [] : (Array.isArray(v) ? v : [v]);
+const num = v => { if (v === null || v === undefined || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+const fmtN = (v, d = 1) => v == null ? '—' : (Math.round(v * 10 ** d) / 10 ** d).toLocaleString('ru-RU');
+
+(function initToken() {
+  const qs = new URLSearchParams(location.search);
+  const t = qs.get('t');
+  try {
+    if (t) { sessionStorage.setItem('w11tk-token', t); history.replaceState(null, '', location.pathname); }
+    PNL.token = t || sessionStorage.getItem('w11tk-token');
+  } catch (e) { PNL.token = t; }
+})();
+const pnlLocal = location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
+
+async function api(path, body) {
+  const opt = { method: body ? 'POST' : 'GET', headers: { 'X-Toolkit-Token': PNL.token || '' }, cache: 'no-store' };
+  if (body) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  const r = await fetch(path, opt);
+  let j = null;
+  try { j = await r.json(); } catch (e) { }
+  if (!r.ok) throw new Error((j && j.Error) || ('HTTP ' + r.status));
+  return j;
+}
+
+function showTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === id));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === id));
+}
+function goCard(id) { showTab('tab-panel'); const el = $id(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+
+function setConn(state, text, sub) {
+  $id('pnlDot').className = 'ctl-dot ' + (state === 'on' ? 'on' : state === 'off' ? 'off' : '');
+  $id('pnlStatusText').textContent = text;
+  if (sub != null) $id('pnlSubText').textContent = sub;
+}
+
+async function pnlInit() {
+  if (!pnlLocal || !PNL.token) {
+    setConn('off', 'Скрипт не запущен — режим просмотра',
+      'Кнопки 2 и 4 работают и без скрипта. Для кнопок 1 и 3 запустите Start-Toolkit.cmd на этом ПК (см. «Как включить» ниже).');
+    renderPlan(); renderJournals(); return;
+  }
+  try {
+    const s = await api('/api/status');
+    PNL.online = true; PNL.status = s;
+    setConn('on', `Подключено к ${s.Computer} • ${s.IsAdmin ? 'администратор' : 'без прав администратора: только анализ'} • скрипт ${s.Version}`,
+      'Папка отчётов: ' + s.OutDir);
+    $id('pnlHowto').classList.add('pnl-hidden');
+    $id('btnPnlStop').classList.remove('pnl-hidden');
+    await refreshFiles();
+    if (s.Job) { PNL.jobId = s.Job.Id; PNL.since = 0; showJob(s.Job); if (s.Job.Running) startPolling(); else pollOnce(); }
+  } catch (e) {
+    setConn('off', 'Нет связи с локальной панелью: ' + e.message,
+      'Панель остановлена или ключ устарел. Запустите Start-Toolkit.cmd снова — откроется новая ссылка.');
+  }
+  renderPlan(); renderJournals();
+}
+
+// ---------- файлы и отчёты ----------
+function parseName(n) {
+  const m = /^Win11-Telemetry_(.+)_(\d{8}-\d{6}|\d{8}_\d{6}|[\d-]+)_(Manual|PostLogon)\.json$/i.exec(n || '');
+  if (!m) return { pc: '', tag: '', time: '' };
+  const t = /^(\d{4})(\d{2})(\d{2})[-_](\d{2})(\d{2})(\d{2})$/.exec(m[2]);
+  return { pc: m[1], tag: m[3], time: t ? `${t[1]}-${t[2]}-${t[3]} ${t[4]}:${t[5]}:${t[6]}.000` : '' };
+}
+function addReport(key, name, source, data, time) {
+  const old = PNL.reports.get(key);
+  PNL.reports.set(key, { key, name, source, data: data || (old && old.data) || null, time: time || (old && old.time) || '', order: old ? old.order : ++PNL.seq });
+}
+async function getData(key) {
+  const r = PNL.reports.get(key);
+  if (!r) return null;
+  if (!r.data && r.source === 'server') r.data = await api('/api/file?name=' + encodeURIComponent(r.name));
+  return r.data;
+}
+function reportTime(r) { return (r.data && r.data.CollectedAt) || r.time || ''; }
+function sortedReports() { return [...PNL.reports.values()].sort((a, b) => reportTime(a).localeCompare(reportTime(b)) || a.order - b.order); }
+
+async function refreshFiles() {
+  if (!PNL.online) { renderFiles(); return; }
+  try {
+    const r = await api('/api/files');
+    PNL.journals = [];
+    for (const f of arr(r.Files)) {
+      if (f.Type === 'telemetry') addReport('srv:' + f.Name, f.Name, 'server', null, parseName(f.Name).time || f.Time);
+      else if (f.Type === 'journal') PNL.journals.push(f);
+    }
+  } catch (e) { pnlToast('Не удалось получить список файлов: ' + e.message); }
+  renderFiles(); renderJournals();
+}
+
+function renderFiles() {
+  const list = sortedReports().reverse();
+  $id('pnlFilesWrap').classList.toggle('pnl-hidden', !list.length);
+  $id('pnlFilesHint').textContent = list.length
+    ? `Оценок: ${list.length}. «План» — показать рекомендации из файла; «До» и «После» — выбрать для сравнения.`
+    : (PNL.online ? 'В папке отчётов пока нет оценок — нажмите «Проанализировать систему».' : 'Пока не загружено ни одной оценки. Нажмите «Открыть JSON с диска…» и выберите файлы Win11-Telemetry_*.json.');
+  $id('pnlFilesBody').innerHTML = list.map(r => {
+    const p = parseName(r.name), d = r.data || {};
+    return `<tr><td class="mono">${esc(r.name)}${PNL.planKey === r.key ? ' <span class="st-chip ok">в плане</span>' : ''}</td>
+      <td>${esc(d.ComputerName || p.pc)}</td><td class="mono">${esc(reportTime(r))}</td>
+      <td>${r.source === 'server' ? 'папка отчётов' : 'с диска'}${(d.Tag || p.tag) === 'PostLogon' ? ' • замер после входа' : ''}</td>
+      <td style="white-space:nowrap"><button class="btn btn-sm" data-act="plan" data-key="${esc(r.key)}">План</button>
+      <button class="btn btn-sm" data-act="a" data-key="${esc(r.key)}">До</button>
+      <button class="btn btn-sm" data-act="b" data-key="${esc(r.key)}">После</button></td></tr>`;
+  }).join('');
+  fillDiffSelects();
+}
+
+$id('pnlFilesBody').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const key = b.getAttribute('data-key'), act = b.getAttribute('data-act');
+  try {
+    await getData(key);
+    if (act === 'plan') { PNL.planKey = key; PNL.planSel = null; renderPlan(); renderFiles(); goCard('pnlPlanCard'); }
+    else { fillDiffSelects(); $id(act === 'a' ? 'selDiffA' : 'selDiffB').value = key; renderFiles(); $id(act === 'a' ? 'selDiffA' : 'selDiffB').value = key; goCard('pnlDiffCard'); }
+  } catch (err) { pnlToast('Не удалось открыть файл: ' + err.message); }
+});
+
+function loadLocalFiles(files) {
+  let n = 0, lastKey = null;
+  const jobs = [...files].map(f => new Promise(res => {
+    const rd = new FileReader();
+    rd.onload = ev => {
+      try {
+        const txt = String(ev.target.result).replace(/^\uFEFF/, '');
+        const data = JSON.parse(txt);
+        if (!data || typeof data !== 'object' || (!data.BootAnchors && !data.Memory)) throw new Error('это не файл оценки Win11-Telemetry');
+        lastKey = 'loc:' + f.name + ':' + f.size + ':' + f.lastModified;
+        addReport(lastKey, f.name, 'file', data, data.CollectedAt || '');
+        n++;
+      } catch (err) { pnlToast(`${f.name}: ${err.message}`); }
+      res();
+    };
+    rd.onerror = () => res();
+    rd.readAsText(f, 'utf-8');
+  }));
+  return Promise.all(jobs).then(() => {
+    if (n && !PNL.planKey) {   // в план — самая свежая оценка, где план есть
+      const withPlan = sortedReports().filter(r => r.data && arr(r.data.Plan).length);
+      PNL.planKey = withPlan.length ? withPlan[withPlan.length - 1].key : lastKey; PNL.planSel = null;
+    }
+    renderFiles(); renderPlan(); autoDiffDefaults();
+    return n;
+  });
+}
+$id('pnlFileInput').addEventListener('change', async e => {
+  const n = await loadLocalFiles(e.target.files);
+  e.target.value = '';
+  if (n) goCard(PNL.reports.size >= 2 ? 'pnlDiffCard' : 'pnlFilesCard');
+});
+// импорт через старую кнопку в шапке тоже добавляет файл в список оценок
+$id('jsonFileInput').addEventListener('change', e => { if (e.target.files.length) loadLocalFiles(e.target.files); });
+
+// ---------- выполнение операций ----------
+function setBusy(b) {
+  PNL.busy = b;
+  ['stepCollect', 'btnPnlDry', 'btnPnlApply', 'btnPnlRbDry', 'btnPnlRb', 'btnPnlSchedule', 'btnPnlUnschedule'].forEach(id => { const el = $id(id); if (el) el.disabled = b; });
+  $id('btnPnlCancel').disabled = !b;
+}
+function showJob(j) {
+  $id('pnlJobCard').classList.remove('pnl-hidden');
+  $id('pnlJobTitle').textContent = j.Label || j.Mode;
+  const chip = $id('pnlJobState');
+  if (j.Running) { chip.className = 'st-chip chg'; chip.textContent = 'выполняется… ' + (j.Started || '').slice(11, 19); }
+  else if (j.ExitCode === 0) { chip.className = 'st-chip ok'; chip.textContent = 'готово'; }
+  else { chip.className = 'st-chip'; chip.textContent = 'завершено с кодом ' + j.ExitCode; }
+}
+async function runAction(body) {
+  if (!PNL.online) { goCard('pnlHowto'); pnlToast('Сначала запустите Start-Toolkit.cmd — тогда эта кнопка выполнит команду на ПК.'); return; }
+  if (PNL.busy) { pnlToast('Дождитесь окончания текущей операции.'); return; }
+  try {
+    const r = await api('/api/run', body);
+    PNL.jobId = r.Job.Id; PNL.since = 0;
+    $id('pnlLog').textContent = '';
+    $id('pnlJobHint').textContent = '';
+    showJob(r.Job); goCard('pnlJobCard'); startPolling();
+  } catch (e) { pnlToast(e.message); }
+}
+function startPolling() { setBusy(true); clearTimeout(PNL.timer); PNL.timer = setTimeout(pollOnce, 600); }
+async function pollOnce() {
+  let j;
+  try { j = (await api('/api/job?since=' + PNL.since)).Job; }
+  catch (e) { setBusy(false); setConn('off', 'Связь с панелью потеряна: ' + e.message); return; }
+  if (!j) { setBusy(false); return; }
+  if (j.Id !== PNL.jobId) { PNL.jobId = j.Id; PNL.since = 0; $id('pnlLog').textContent = ''; }
+  const log = $id('pnlLog');
+  const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+  const chunk = String(j.Log || '').replace(/\x1b\[[0-9;]*m/g, '');   // без цветовых кодов консоли
+  if (j.LogFrom === 0 && PNL.since === 0) log.textContent = chunk; else log.textContent += chunk;
+  PNL.since = j.LogLength || 0;
+  if (atBottom) log.scrollTop = log.scrollHeight;
+  showJob(j);
+  if (j.Running) { PNL.timer = setTimeout(pollOnce, 1000); return; }
+  setBusy(false);
+  await jobFinished(j);
+}
+async function jobFinished(j) {
+  const before = new Set([...PNL.reports.keys()]);
+  await refreshFiles();
+  const hint = $id('pnlJobHint');
+  if (j.Mode === 'Collect') {
+    const fresh = sortedReports().filter(r => r.source === 'server' && !before.has(r.key));
+    const newest = fresh.length ? fresh[fresh.length - 1] : null;
+    if (newest) {
+      try {
+        await getData(newest.key);
+        PNL.planKey = newest.key; PNL.planSel = null; renderPlan(); renderFiles();
+        const all = sortedReports();
+        if (all.length >= 2) { $id('selDiffA').value = all[all.length - 2].key; $id('selDiffB').value = newest.key; }
+        hint.textContent = 'Оценка готова и открыта в плане ниже. Следующий шаг — «Применить рекомендации».';
+      } catch (e) { hint.textContent = 'Оценка создана, но не прочитана: ' + e.message; }
+    }
+  } else if (j.Mode === 'Apply') {
+    hint.textContent = /-WhatIf|Пробный/i.test(j.Label || '') ? 'Пробный прогон: система не изменялась.'
+      : 'Изменения внесены. Перезагрузите ПК, затем «Проанализировать систему» (или замер после входа) и сравните в шаге 4.';
+  } else if (j.Mode === 'Rollback') {
+    hint.textContent = /Пробный/.test(j.Label || '') ? 'Пробный откат: система не изменялась.' : 'Откат выполнен. Рекомендуется перезагрузка.';
+  }
+}
+$id('btnPnlCancel').addEventListener('click', async () => { try { await api('/api/cancel', {}); } catch (e) { pnlToast(e.message); } });
+$id('btnPnlStop').addEventListener('click', async () => {
+  if (!(await pnlConfirm('Остановить панель?', '<p>Локальный сервер в окне PowerShell завершится, кнопки 1 и 3 перестанут работать. Загруженные отчёты и сравнение на этой странице останутся.</p>', 'Остановить'))) return;
+  try { await api('/api/shutdown', {}); } catch (e) { }
+  PNL.online = false; clearTimeout(PNL.timer); setBusy(false);
+  try { sessionStorage.removeItem('w11tk-token'); } catch (e) { }
+  setConn('off', 'Панель остановлена. Окно PowerShell можно закрыть.', 'Чтобы продолжить, снова запустите Start-Toolkit.cmd.');
+  $id('btnPnlStop').classList.add('pnl-hidden'); renderPlan();
+});
+
+// ---------- план и применение ----------
+function planRows() {
+  const r = PNL.planKey && PNL.reports.get(PNL.planKey);
+  return r && r.data ? arr(r.data.Plan) : [];
+}
+function renderPlan() {
+  const rows = planRows();
+  const r = PNL.planKey && PNL.reports.get(PNL.planKey);
+  const has = rows.length > 0;
+  ['pnlPlanWrap', 'pnlPlanActions', 'pnlPlanButtons'].forEach(id => $id(id).classList.toggle('pnl-hidden', !has || (id !== 'pnlPlanWrap' && !PNL.online)));
+  $id('pnlPlanCmd').classList.toggle('pnl-hidden', !has || PNL.online);
+  if (!has) {
+    $id('pnlPlanSrc').textContent = '';
+    if (r && r.data) $id('pnlPlanHint').textContent = 'В этом файле нет плана (собран старой версией скрипта). Выполните «Проанализировать систему».';
+    return;
+  }
+  if (PNL.planSel === null) PNL.planSel = new Set(rows.filter(x => x.Selected && x.Status === 'Изменить').map(x => x.Id));
+  const d = r.data;
+  $id('pnlPlanSrc').textContent = `— ${d.ComputerName || ''}, ${d.CollectedAt || ''}`;
+  const other = PNL.online && PNL.status && d.ComputerName && d.ComputerName.toUpperCase() !== String(PNL.status.Computer).toUpperCase();
+  $id('pnlPlanHint').innerHTML = (other ? `<span class="d-bad">Этот план собран на ${esc(d.ComputerName)}, а панель запущена на ${esc(PNL.status.Computer)}.</span> ` : '') +
+    'Отмечены рекомендованные пункты низкого риска со статусом «Изменить». Перед применением скрипт заново проверит текущее состояние каждого пункта, поэтому уже настроенные пропустит. Отменить можно в блоке «Откат изменений».';
+  const seen = new Set();
+  $id('pnlPlanBody').innerHTML = rows.map(x => {
+    const can = x.Status === 'Изменить';
+    const first = !seen.has(x.Id); seen.add(x.Id);
+    const chk = first ? `<input type="checkbox" data-id="${esc(x.Id)}" ${PNL.planSel.has(x.Id) ? 'checked' : ''} ${rows.some(y => y.Id === x.Id && y.Status === 'Изменить') ? '' : 'disabled'}>` : '';
+    const cls = can ? 'chg' : (x.Status === 'Уже так' ? 'ok' : '');
+    return `<tr><td>${chk}</td><td class="mono">${esc(x.Id)}</td><td>${esc(x.Group)}</td><td>${esc(x.Risk)}</td>
+      <td><span class="st-chip ${cls}">${esc(x.Status)}</span></td>
+      <td><div>${esc(x.Title)}</div><div class="mono" style="color:var(--text-muted)">${esc(x.Target)}${x.Current || x.Desired ? ': ' + esc(x.Current) + ' → ' + esc(x.Desired) : ''}</div></td>
+      <td>${esc(x.Effect || x.Reason || '')}</td></tr>`;
+  }).join('');
+  updatePlanCount();
+}
+function selectedIds2() { const ok = new Set(planRows().filter(x => x.Status === 'Изменить').map(x => x.Id)); return [...PNL.planSel].filter(id => ok.has(id)); }
+function updatePlanCount() {
+  const ids = selectedIds2();
+  $id('pnlPlanCount').textContent = `Выбрано пунктов: ${ids.length}`;
+  const q = ids.length ? `"${ids.join(',')}"` : '"<Id через запятую>"';
+  $id('pnlCmdText').textContent = `.\\Start-Toolkit.cmd -Mode Apply -Only ${q} -WhatIf\n.\\Start-Toolkit.cmd -Mode Apply -Only ${q}`;
+  $id('pnlCmdText').style.whiteSpace = 'pre-wrap';
+}
+$id('pnlPlanBody').addEventListener('change', e => {
+  const c = e.target.closest('input[data-id]'); if (!c) return;
+  if (c.checked) PNL.planSel.add(c.dataset.id); else PNL.planSel.delete(c.dataset.id);
+  updatePlanCount();
+});
+$id('btnPlanRec').addEventListener('click', () => { PNL.planSel = null; renderPlan(); });
+$id('btnPlanNone').addEventListener('click', () => { PNL.planSel = new Set(); renderPlan(); });
+$id('btnPnlCopyCmd').addEventListener('click', () => { navigator.clipboard && navigator.clipboard.writeText($id('pnlCmdText').textContent); pnlToast('Команда скопирована. Вставьте её в PowerShell в папке со скриптом.'); });
+
+function applyBody(whatIf) {
+  return { Action: 'apply', Only: selectedIds2(), WhatIf: whatIf, NoRestorePoint: !$id('chkPnlRestore').checked, StopNow: $id('chkPnlStopNow').checked };
+}
+$id('btnPnlDry').addEventListener('click', () => {
+  if (!selectedIds2().length) { pnlToast('Отметьте хотя бы один пункт со статусом «Изменить».'); return; }
+  runAction(applyBody(true));
+});
+$id('btnPnlApply').addEventListener('click', async () => {
+  const ids = selectedIds2();
+  if (!ids.length) { pnlToast('Отметьте хотя бы один пункт со статусом «Изменить».'); return; }
+  if (PNL.status && !PNL.status.IsAdmin) { pnlToast('Панель запущена без прав администратора. Закройте её и запустите Start-Toolkit.cmd снова, подтвердив запрос UAC.'); return; }
+  const rows = planRows().filter(x => ids.includes(x.Id) && x.Status === 'Изменить');
+  const ok = await pnlConfirm(`Применить ${ids.length} пунктов?`,
+    `<p>Будут изменены настройки на <strong>${esc(PNL.status ? PNL.status.Computer : '')}</strong>:</p>
+     <div class="pnl-scroll" style="max-height:200px;padding:6px 10px;font-size:12.5px">${rows.map(x => `<div><span class="mono">${esc(x.Id)}</span> — ${esc(x.Title)}</div>`).join('')}</div>
+     <p>${$id('chkPnlRestore').checked ? 'Сначала будет создана точка восстановления. ' : '<span class="d-bad">Точка восстановления создана не будет.</span> '}
+     Исходные значения сохранятся в журнал для отката. Часть изменений вступит в силу после перезагрузки.</p>`, 'Применить');
+  if (ok) runAction(applyBody(false));
+});
+
+// ---------- откат и замер ----------
+function renderJournals() {
+  const s = $id('selPnlJournal');
+  const list = [...PNL.journals].sort((a, b) => String(b.Time).localeCompare(String(a.Time)));
+  s.innerHTML = list.length ? list.map(f => `<option value="${esc(f.Name)}">${esc(f.Name)} (${esc(f.Time)})</option>`).join('')
+    : `<option value="">${PNL.online ? '— журналов пока нет —' : '— доступно при запущенной панели —'}</option>`;
+}
+async function rollback(whatIf) {
+  if (!PNL.online) { pnlToast('Откат без панели: в папке со скриптом выполните .\\Start-Toolkit.cmd -Mode Rollback (последний журнал) или с -WhatIf для проверки.'); return; }
+  const name = $id('selPnlJournal').value;
+  if (!name) { pnlToast('Журналов применения нет — откатывать нечего.'); return; }
+  if (!whatIf && !(await pnlConfirm('Откатить изменения?', `<p>Будут возвращены значения из журнала <span class="mono">${esc(name)}</span> в обратном порядке.</p>`, 'Откатить'))) return;
+  runAction({ Action: 'rollback', Journal: name, WhatIf: whatIf });
+}
+$id('btnPnlRbDry').addEventListener('click', () => rollback(true));
+$id('btnPnlRb').addEventListener('click', () => rollback(false));
+$id('btnPnlSchedule').addEventListener('click', () => PNL.online ? runAction({ Action: 'schedule' }) : pnlToast('Без панели: .\\Start-Toolkit.cmd -Mode ScheduleMeasure'));
+$id('btnPnlUnschedule').addEventListener('click', () => PNL.online ? runAction({ Action: 'unschedule' }) : pnlToast('Без панели: .\\Start-Toolkit.cmd -Mode UnscheduleMeasure'));
+
+// ---------- отчёт «до / после» ----------
+const DIFF_METRICS = [
+  ['Загрузка', 'PreLogonSec', 'Старт ядра → вход в систему (включая ожидание пароля)', 'с', -1],
+  ['Загрузка', 'ScmSec', 'Запуск служб (SCM)', 'с', -1],
+  ['Загрузка', 'DesktopAfterLogonSec', 'Вход → запуск Проводника', 'с', -1],
+  ['Загрузка', 'LastStartupAfterLogonSec', 'Вход → последняя программа автозагрузки', 'с', -1],
+  ['Загрузка', 'BootTimeMs', 'BootTime, журнал Diagnostics-Performance (ID 100)', 'мс', -1],
+  ['Загрузка', 'MainPathMs', 'MainPathBootTime (ID 100)', 'мс', -1],
+  ['Загрузка', 'PostBootMs', 'PostBootTime (ID 100)', 'мс', -1],
+  ['Память', 'MemUsedMB', 'Занято физической памяти', 'МБ', -1],
+  ['Память', 'MemLoadPct', 'Загрузка ОЗУ', '%', -1],
+  ['Память', 'CommitUsedMB', 'Выделенная память (Commit)', 'МБ', -1],
+  ['Память', 'CommitLimitMB', 'Предел выделения (ОЗУ + файл подкачки)', 'МБ', 0],
+  ['Память', 'CompressionWSMB', 'Сжатая память (Memory Compression)', 'МБ', -1],
+  ['Память', 'TopPrivMB', 'Приватная память 30 крупнейших процессов', 'МБ', -1],
+  ['Память', 'ProcessCount', 'Число процессов', 'шт', -1],
+  ['Автозагрузка', 'StartupEnabled', 'Включённые пункты автозагрузки', 'шт', -1],
+  ['Автозагрузка', 'StartupRunning', 'Из них запущены', 'шт', -1],
+  ['Автозагрузка', 'AutoServices3rd', 'Сторонние службы с автозапуском', 'шт', -1],
+  ['Автозагрузка', 'HighImpact', 'Пункты с высоким влиянием на запуск', 'шт', -1],
+  ['Автозагрузка', 'PlanPending', 'Рекомендации, ещё не применённые', 'шт', -1],
+  ['Условия замера', 'UptimeMin', 'Время от старта ядра до замера', 'мин', 0],
+];
+function calcMetrics(d) {
+  const m = Object.assign({}, d.Metrics || {});
+  const ba = d.BootAnchors || {}, mem = d.Memory || {};
+  const su = arr(d.StartupImpact);
+  const nonSvc = su.filter(x => x && x.Kind !== 'Служба');
+  const set = (k, v) => { if (num(m[k]) == null && v != null) m[k] = v; };
+  set('PreLogonSec', num(ba.PreLogonSec)); set('ScmSec', num(ba.ScmSec)); set('DesktopAfterLogonSec', num(ba.DesktopAfterLogonSec));
+  const offs = nonSvc.map(x => num(x.StartOffsetSec)).filter(v => v != null && v >= 0 && v <= 1800);
+  set('LastStartupAfterLogonSec', offs.length ? Math.max(...offs) : null);
+  const ev = arr(d.DiagPerfEvents).filter(x => x && Number(x.Id) === 100 && (!ba.KernelStart || String(x.TimeCreated) >= String(ba.KernelStart)));
+  if (ev.length) { set('BootTimeMs', num(ev[0].BootTimeMs)); set('MainPathMs', num(ev[0].MainPathMs)); set('PostBootMs', num(ev[0].PostBootMs)); }
+  set('MemUsedMB', num(mem.UsedPhysMB)); set('MemLoadPct', num(mem.LoadPct)); set('CommitUsedMB', num(mem.CommitUsedMB));
+  set('CommitLimitMB', num(mem.CommitTotalMB)); set('CompressionWSMB', num(mem.CompressionWSMB));
+  const tp = arr(d.TopProcesses).map(x => num(x && x.Priv_MB)).filter(v => v != null);
+  m.TopPrivMB = tp.length ? Math.round(tp.reduce((a, b) => a + b, 0)) : null;
+  set('StartupEnabled', su.length ? nonSvc.filter(x => x.Enabled).length : null);
+  set('StartupRunning', su.length ? nonSvc.filter(x => x.Running).length : null);
+  set('AutoServices3rd', su.length ? su.filter(x => x && x.Kind === 'Служба').length : null);
+  set('HighImpact', su.length ? su.filter(x => x && String(x.Impact || '').startsWith('Высокое')).length : null);
+  const plan = arr(d.Plan);
+  set('PlanPending', plan.length ? plan.filter(x => x.Selected && x.Status === 'Изменить').length : null);
+  if (num(m.UptimeMin) == null && ba.KernelStart && d.CollectedAt) {
+    const t0 = Date.parse(String(ba.KernelStart).replace(' ', 'T')), t1 = Date.parse(String(d.CollectedAt).replace(' ', 'T'));
+    if (Number.isFinite(t0) && Number.isFinite(t1)) m.UptimeMin = Math.round((t1 - t0) / 60000);
+  }
+  return m;
+}
+function deltaCell(a, b, dir, unit) {
+  if (a == null || b == null) return { d: null, p: null, cls: 'd-zero', txt: '—', ptxt: '', mark: 'нет данных' };
+  const d = b - a, p = a !== 0 ? d / Math.abs(a) * 100 : null;
+  const eps = Math.max(Math.abs(a) * 0.01, unit === 'шт' ? 0 : 0.05);
+  let cls = 'd-zero', mark = 'без изменений';
+  if (Math.abs(d) > eps && dir !== 0) { const good = dir < 0 ? d < 0 : d > 0; cls = good ? 'd-good' : 'd-bad'; mark = good ? 'лучше' : 'хуже'; }
+  else if (Math.abs(d) > eps) mark = 'изменилось';
+  return { d, p, cls, mark, txt: (d > 0 ? '+' : '') + fmtN(d), ptxt: p == null ? '' : (p > 0 ? '+' : '') + fmtN(p, 0) + '%' };
+}
+function fillDiffSelects() {
+  const list = sortedReports();
+  const opts = list.map(r => { const p = parseName(r.name), d = r.data || {}; return `<option value="${esc(r.key)}">${esc((d.ComputerName || p.pc || r.name))} • ${esc(reportTime(r))}${(d.Tag || p.tag) === 'PostLogon' ? ' • после входа' : ''}${r.source === 'file' ? ' • с диска' : ''}</option>`; }).join('');
+  for (const id of ['selDiffA', 'selDiffB']) {
+    const s = $id(id), v = s.value;
+    s.innerHTML = list.length ? opts : '<option value="">— загрузите хотя бы две оценки —</option>';
+    if (v && PNL.reports.has(v)) s.value = v;
+  }
+  autoDiffDefaults(true);
+}
+function autoDiffDefaults(onlyEmpty) {
+  const list = sortedReports(); if (list.length < 2) return;
+  const a = $id('selDiffA'), b = $id('selDiffB');
+  if (!onlyEmpty || a.value === b.value) { a.value = list[list.length - 2].key; b.value = list[list.length - 1].key; }
+}
+async function runDiff() {
+  const ka = $id('selDiffA').value, kb = $id('selDiffB').value;
+  const out = $id('pnlDiffOut');
+  if (!ka || !kb) { out.innerHTML = '<div class="callout callout-warn"><p>Нужно две оценки: нажмите «Загрузить файл оценки» или выполните анализ до и после изменений.</p></div>'; return; }
+  if (ka === kb) { out.innerHTML = '<div class="callout callout-warn"><p>Выбран один и тот же файл в «До» и «После».</p></div>'; return; }
+  let A, B;
+  try { A = await getData(ka); B = await getData(kb); } catch (e) { out.innerHTML = `<div class="callout callout-crit"><p>${esc(e.message)}</p></div>`; return; }
+  const ma = calcMetrics(A), mb = calcMetrics(B);
+  const warn = [];
+  if (A.ComputerName && B.ComputerName && A.ComputerName !== B.ComputerName) warn.push(`Сравниваются разные компьютеры: ${esc(A.ComputerName)} и ${esc(B.ComputerName)}.`);
+  if (String(B.CollectedAt || '') < String(A.CollectedAt || '')) warn.push('Файл «После» собран раньше, чем «До» — проверьте порядок.');
+  const ua = num(ma.UptimeMin), ub = num(mb.UptimeMin);
+  if (ua != null && ub != null && Math.abs(ua - ub) > 5 && Math.abs(ua - ub) > 0.25 * Math.max(ua, ub)) warn.push(`Замеры сделаны через разное время после старта (${fmtN(ua, 0)} и ${fmtN(ub, 0)} мин): память и состав процессов сравнимы лишь приблизительно.`);
+  if (A.BootAnchors && B.BootAnchors && A.BootAnchors.KernelStart && A.BootAnchors.KernelStart === B.BootAnchors.KernelStart) warn.push('Обе оценки относятся к одной и той же загрузке — показатели загрузки не изменятся, пока ПК не перезагружен.');
+  if (A.IsAdmin === false || B.IsAdmin === false) warn.push('Одна из оценок собрана без прав администратора — часть показателей может отсутствовать.');
+
+  const rows = DIFF_METRICS.map(([g, k, label, unit, dir]) => { const a = num(ma[k]), b = num(mb[k]); return { g, k, label, unit, dir, a, b, ...deltaCell(a, b, dir, unit) }; });
+  // автозагрузка
+  const keyOf = x => (x.Kind || '') + '|' + (x.Name || '');
+  const sa = new Map(arr(A.StartupImpact).filter(Boolean).map(x => [keyOf(x), x])), sb = new Map(arr(B.StartupImpact).filter(Boolean).map(x => [keyOf(x), x]));
+  const suRows = [];
+  for (const k of new Set([...sa.keys(), ...sb.keys()])) {
+    const x = sa.get(k), y = sb.get(k);
+    let ch = '';
+    if (!x) ch = 'новый пункт'; else if (!y) ch = 'удалён'; else if (!!x.Enabled !== !!y.Enabled) ch = y.Enabled ? 'включён' : 'отключён';
+    else if (!!x.Running !== !!y.Running) ch = y.Running ? 'теперь запущен' : 'больше не запущен';
+    const dc = (num(y && y.CPU_ms) || 0) - (num(x && x.CPU_ms) || 0), dp = (num(y && y.Priv_MB) || 0) - (num(x && x.Priv_MB) || 0);
+    if (!ch && Math.abs(dc) < 500 && Math.abs(dp) < 20) continue;
+    const z = y || x;
+    suRows.push({ kind: z.Kind, name: z.Name, ch: ch || 'изменилась нагрузка', a: x, b: y, dc, dp });
+  }
+  suRows.sort((p, q) => Math.abs(q.dp) - Math.abs(p.dp) || Math.abs(q.dc) - Math.abs(p.dc));
+  // процессы
+  const pa = new Map(arr(A.TopProcesses).filter(Boolean).map(x => [x.Name, x])), pb = new Map(arr(B.TopProcesses).filter(Boolean).map(x => [x.Name, x]));
+  const prRows = [...new Set([...pa.keys(), ...pb.keys()])].map(n => {
+    const x = pa.get(n) || {}, y = pb.get(n) || {};
+    return { n, a: num(x.Priv_MB), b: num(y.Priv_MB), wa: num(x.WS_MB), wb: num(y.WS_MB), ca: num(x.CPU_Sec), cb: num(y.CPU_Sec), d: (num(y.Priv_MB) || 0) - (num(x.Priv_MB) || 0) };
+  }).sort((p, q) => Math.abs(q.d) - Math.abs(p.d)).slice(0, 20);
+  // план
+  const pk = x => x.Id + '|' + (x.Target || '');
+  const plA = new Map(arr(A.Plan).filter(Boolean).map(x => [pk(x), x]));
+  const plRows = arr(B.Plan).filter(Boolean).map(y => ({ y, x: plA.get(pk(y)) })).filter(r => r.x && r.x.Status !== r.y.Status);
+
+  PNL.lastDiff = { A, B, rows, suRows, prRows, plRows };
+  $id('btnDiffCsv').disabled = false;
+
+  const kpi = ['LastStartupAfterLogonSec', 'PreLogonSec', 'MemUsedMB', 'CommitUsedMB'].map(k => rows.find(r => r.k === k)).map(r =>
+    `<div class="kpi-card"><div class="kpi-label">${esc(r.label)}</div><div class="kpi-value">${esc(fmtN(r.b))} <span style="font-size:13px;font-weight:500;color:var(--text-muted)">${esc(r.unit)}</span></div>
+     <div class="kpi-delta"><span class="${r.cls}">${esc(r.txt)} ${esc(r.unit)} ${r.ptxt ? '(' + esc(r.ptxt) + ')' : ''}</span> • было ${esc(fmtN(r.a))}</div></div>`).join('');
+  const hdr = (a, b) => `${esc(a.ComputerName || '')} ${esc(a.CollectedAt || '')}`;
+  let html = `<p class="section-desc"><strong>До:</strong> ${hdr(A)} &nbsp; <strong>После:</strong> ${hdr(B)}</p>`;
+  if (warn.length) html += `<div class="callout callout-warn"><h4>Учтите при сравнении</h4><p>${warn.join('<br>')}</p></div>`;
+  html += `<div class="kpi-grid" style="margin-top:12px">${kpi}</div>`;
+  html += `<div class="pnl-scroll"><table class="pnl-table"><thead><tr><th>Раздел</th><th>Показатель</th><th class="num">До</th><th class="num">После</th><th class="num">Δ</th><th class="num">Δ %</th><th>Оценка</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${esc(r.g)}</td><td>${esc(r.label)}</td><td class="num">${esc(fmtN(r.a))} ${esc(r.unit)}</td><td class="num">${esc(fmtN(r.b))} ${esc(r.unit)}</td>
+      <td class="num ${r.cls}">${esc(r.txt)}</td><td class="num ${r.cls}">${esc(r.ptxt)}</td><td class="${r.cls}">${esc(r.mark)}</td></tr>`).join('') + '</tbody></table></div>';
+  html += `<h4 style="margin:16px 0 6px">Автозагрузка и службы: что изменилось (${suRows.length})</h4>`;
+  html += suRows.length ? `<div class="pnl-scroll" style="max-height:320px"><table class="pnl-table"><thead><tr><th>Тип</th><th>Имя</th><th>Изменение</th><th class="num">Старт после входа, с (до → после)</th><th class="num">ΔCPU, мс</th><th class="num">ΔПамять, МБ</th></tr></thead><tbody>` +
+    suRows.map(r => `<tr><td>${esc(r.kind)}</td><td>${esc(r.name)}</td><td>${esc(r.ch)}</td><td class="num">${esc(fmtN(num(r.a && r.a.StartOffsetSec)))} → ${esc(fmtN(num(r.b && r.b.StartOffsetSec)))}</td>
+      <td class="num ${r.dc < 0 ? 'd-good' : r.dc > 0 ? 'd-bad' : 'd-zero'}">${esc((r.dc > 0 ? '+' : '') + fmtN(r.dc, 0))}</td><td class="num ${r.dp < 0 ? 'd-good' : r.dp > 0 ? 'd-bad' : 'd-zero'}">${esc((r.dp > 0 ? '+' : '') + fmtN(r.dp))}</td></tr>`).join('') + '</tbody></table></div>'
+    : '<p class="section-desc">Существенных изменений нет.</p>';
+  html += `<h4 style="margin:16px 0 6px">Процессы: наибольшие изменения приватной памяти (топ-20)</h4><div class="pnl-scroll" style="max-height:320px"><table class="pnl-table"><thead><tr><th>Процесс</th><th class="num">Priv до, МБ</th><th class="num">Priv после, МБ</th><th class="num">Δ, МБ</th><th class="num">WS до → после, МБ</th><th class="num">CPU до → после, с</th></tr></thead><tbody>` +
+    prRows.map(r => `<tr><td>${esc(r.n)}</td><td class="num">${esc(fmtN(r.a))}</td><td class="num">${esc(fmtN(r.b))}</td><td class="num ${r.d < 0 ? 'd-good' : r.d > 0 ? 'd-bad' : 'd-zero'}">${esc((r.d > 0 ? '+' : '') + fmtN(r.d))}</td>
+      <td class="num">${esc(fmtN(r.wa))} → ${esc(fmtN(r.wb))}</td><td class="num">${esc(fmtN(r.ca))} → ${esc(fmtN(r.cb))}</td></tr>`).join('') + '</tbody></table></div>' +
+    '<p class="section-desc" style="margin-top:4px">В файле только 30 крупнейших процессов каждого замера: процесс, выпавший из списка, показан с пустым значением.</p>';
+  html += `<h4 style="margin:16px 0 6px">Рекомендации: смена статуса (${plRows.length})</h4>` + (plRows.length
+    ? `<div class="pnl-scroll" style="max-height:280px"><table class="pnl-table"><thead><tr><th>Id</th><th>Пункт</th><th>Было</th><th>Стало</th></tr></thead><tbody>` +
+      plRows.map(r => `<tr><td class="mono">${esc(r.y.Id)}</td><td>${esc(r.y.Title)} <span class="mono" style="color:var(--text-muted)">${esc(r.y.Target)}</span></td><td>${esc(r.x.Status)}</td><td><span class="st-chip ${r.y.Status === 'Уже так' ? 'ok' : ''}">${esc(r.y.Status)}</span></td></tr>`).join('') + '</tbody></table></div>'
+    : '<p class="section-desc">Статусы не изменились (или в одном из файлов нет плана).</p>');
+  out.innerHTML = html;
+}
+$id('btnDiffRun').addEventListener('click', runDiff);
+$id('btnDiffCsv').addEventListener('click', () => {
+  const D = PNL.lastDiff; if (!D) return;
+  const c = v => { const s = String(v ?? ''); return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const n = v => v == null ? '' : String(Math.round(v * 100) / 100).replace('.', ',');
+  const L = [['Раздел', 'Показатель', 'Единица', 'До', 'После', 'Δ', 'Δ %', 'Оценка'].map(c).join(';')];
+  L.push(['Файлы', 'До / После', '', `${D.A.ComputerName || ''} ${D.A.CollectedAt || ''}`, `${D.B.ComputerName || ''} ${D.B.CollectedAt || ''}`, '', '', ''].map(c).join(';'));
+  D.rows.forEach(r => L.push([r.g, r.label, r.unit, n(r.a), n(r.b), n(r.d), n(r.p), r.mark].map(c).join(';')));
+  D.suRows.forEach(r => L.push(['Автозагрузка', `${r.kind}: ${r.name}`, 'CPU мс / МБ', '', '', `${n(r.dc)} мс; ${n(r.dp)} МБ`, '', r.ch].map(c).join(';')));
+  D.prRows.forEach(r => L.push(['Процесс (Priv)', r.n, 'МБ', n(r.a), n(r.b), n(r.d), '', ''].map(c).join(';')));
+  D.plRows.forEach(r => L.push(['Рекомендация', `${r.y.Id} ${r.y.Target || ''}`, '', r.x.Status, r.y.Status, '', '', ''].map(c).join(';')));
+  const blob = new Blob(['\uFEFF' + L.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Win11-Diff_${(D.B.ComputerName || 'PC').replace(/[^\w.-]/g, '_')}_${String(D.B.CollectedAt || '').replace(/[^\d]/g, '').slice(0, 12)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+// ---------- подтверждение и уведомления ----------
+function pnlConfirm(title, bodyHtml, yesText) {
+  return new Promise(res => {
+    $id('pnlModalTitle').textContent = title;
+    $id('pnlModalBody').innerHTML = bodyHtml;
+    $id('btnModalYes').textContent = yesText || 'Выполнить';
+    const m = $id('pnlModal'); m.style.display = 'flex';
+    const done = v => { m.style.display = 'none'; $id('btnModalYes').onclick = $id('btnModalNo').onclick = null; res(v); };
+    $id('btnModalYes').onclick = () => done(true);
+    $id('btnModalNo').onclick = () => done(false);
+    $id('btnModalNo').focus();
+  });
+}
+function pnlToast(msg) {
+  let t = $id('pnlToast');
+  if (!t) { t = document.createElement('div'); t.id = 'pnlToast'; t.setAttribute('role', 'status');
+    t.style.cssText = 'position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:640px;z-index:60;padding:10px 14px;border-radius:8px;font-size:13px;box-shadow:var(--shadow-md);background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color)';
+    document.body.appendChild(t); }
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => { t.style.display = 'none'; }, 6000);
+}
+
+// ---------- кнопки шагов ----------
+$id('stepCollect').addEventListener('click', () => runAction({ Action: 'collect' }));
+$id('stepLoad').addEventListener('click', async () => {
+  if (PNL.online) { await refreshFiles(); goCard('pnlFilesCard'); if (!PNL.reports.size) pnlToast('В папке отчётов пока нет оценок — сначала «Проанализировать систему».'); }
+  else $id('pnlFileInput').click();
+});
+$id('btnPnlPick').addEventListener('click', () => $id('pnlFileInput').click());
+$id('btnPnlRefresh').addEventListener('click', refreshFiles);
+$id('stepApply').addEventListener('click', async () => {
+  if (!planRows().length) {
+    const list = sortedReports();
+    if (list.length) { try { await getData(list[list.length - 1].key); PNL.planKey = list[list.length - 1].key; PNL.planSel = null; renderPlan(); renderFiles(); } catch (e) { } }
+    else pnlToast(PNL.online ? 'Сначала «Проанализировать систему» — план строится по результатам анализа.' : 'Сначала загрузите файл оценки (шаг 2) или запустите Start-Toolkit.cmd.');
+  }
+  goCard('pnlPlanCard');
+});
+$id('stepDiff').addEventListener('click', () => {
+  goCard('pnlDiffCard');
+  if (PNL.reports.size >= 2) runDiff(); else pnlToast('Для сравнения нужны две оценки: до изменений и после них.');
+});
+
+setBusy(false);
+pnlInit();
 </script>
 </body>
 </html>
