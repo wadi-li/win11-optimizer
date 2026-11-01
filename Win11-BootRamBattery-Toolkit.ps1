@@ -75,7 +75,7 @@ param(
 # 0. Инициализация
 # ----------------------------------------------------------------------------------------------
 $ErrorActionPreference = 'Continue'   # Stop ломает перехват stderr нативных утилит в PS 5.1
-$script:Version   = '2.1.0'
+$script:Version   = '2.1.1'
 $script:Cmdlet    = $PSCmdlet
 $script:CimProblems = @{}
 $script:ProcFallback = $false
@@ -1617,9 +1617,26 @@ function Send-PanelResponse {
            "Cache-Control: no-store`r`nX-Content-Type-Options: nosniff`r`nX-Frame-Options: DENY`r`nReferrer-Policy: no-referrer`r`n" +
            "Content-Security-Policy: default-src 'self' 'unsafe-inline' data: blob:; connect-src 'self'; frame-ancestors 'none'`r`nConnection: close`r`n`r`n"
     $hb = $script:Latin1.GetBytes($hdr)
-    $Stream.Write($hb, 0, $hb.Length)
-    if ($Body.Length) { $Stream.Write($Body, 0, $Body.Length) }
-    $Stream.Flush()
+    $Stream.Write($hb, 0, $hb.Length); $Stream.Flush()
+    # Частями по 16 КБ с короткой паузой: на T14S с AdGuard/VPN-фильтром запись одним блоком
+    # останавливалась на ~64 КБ, а часть ответов терялась (проверено на Windows PowerShell 5.1)
+    for ($i = 0; $i -lt $Body.Length; $i += 16384) {
+        $Stream.Write($Body, $i, [Math]::Min(16384, $Body.Length - $i)); $Stream.Flush()
+        Start-Sleep -Milliseconds 1
+    }
+    Start-Sleep -Milliseconds 1
+}
+
+function Close-PanelClient {
+    param([Net.Sockets.TcpClient]$Client)
+    # Корректное закрытие: сначала завершаем передачу, дочитываем остаток запроса, затем закрываем.
+    # Простой Close() при непрочитанных данных отправляет RST, и клиент теряет уже отправленный ответ.
+    try { $Client.Client.Shutdown([Net.Sockets.SocketShutdown]::Send) } catch { }
+    try {
+        $st = $Client.GetStream(); $st.ReadTimeout = 500; $buf = New-Object byte[] 4096
+        while ($st.Read($buf, 0, $buf.Length) -gt 0) { }
+    } catch { }
+    try { $Client.Close() } catch { }
 }
 
 function Send-PanelJson {
@@ -1779,7 +1796,8 @@ function Start-Panel {
                 try {
                     if ($c.Available -gt 0) {
                         $busy = $true; $drop = $true
-                        try { Invoke-PanelRequest $c $State } catch { Write-Warning "Запрос не обработан: $($_.Exception.Message)" }
+                        try { $c.NoDelay = $true; $c.SendTimeout = 15000; Invoke-PanelRequest $c $State } catch { Write-Warning "Запрос не обработан: $($_.Exception.Message)" }
+                        Close-PanelClient $c
                     } elseif (-not $c.Connected -or ([DateTime]::UtcNow - $cn.T).TotalSeconds -gt 60 -or
                               ($c.Client.Poll(0, [Net.Sockets.SelectMode]::SelectRead) -and $c.Available -eq 0)) { $drop = $true }   # закрыто клиентом или простаивает
                 } catch { $drop = $true }

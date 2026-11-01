@@ -1699,14 +1699,32 @@ const fmtN = (v, d = 1) => v == null ? '—' : (Math.round(v * 10 ** d) / 10 ** 
 PNL.token = new URLSearchParams(location.search).get('t');
 const pnlLocal = location.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(location.hostname);
 
-async function api(path, body) {
+// Антивирусы и VPN-фильтры (например, AdGuard) иногда обрывают локальные соединения,
+// поэтому сетевые ошибки повторяются; запуск операции не повторяется вслепую — сначала сверяемся со статусом
+async function apiOnce(path, body) {
   const opt = { method: body ? 'POST' : 'GET', headers: { 'X-Toolkit-Token': PNL.token || '' }, cache: 'no-store' };
   if (body) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
   const r = await fetch(path, opt);
   let j = null;
   try { j = await r.json(); } catch (e) { }
-  if (!r.ok) throw new Error((j && j.Error) || ('HTTP ' + r.status));
+  if (!r.ok) { const er = new Error((j && j.Error) || ('HTTP ' + r.status)); er.http = r.status; throw er; }
   return j;
+}
+const pnlPause = ms => new Promise(res => setTimeout(res, ms));
+async function api(path, body) {
+  let prevId = null;
+  if (path === '/api/run') { try { const st = await api('/api/status'); prevId = (st && st.Job && st.Job.Id) || 0; } catch (e) { } }
+  for (let attempt = 0; ; attempt++) {
+    try { return await apiOnce(path, body); }
+    catch (e) {
+      if (e.http || attempt >= 3) throw e;           // ответ сервера (4xx/5xx) не повторяем
+      await pnlPause(250 * (attempt + 1));
+      if (path === '/api/run' && prevId !== null) {   // запрос мог дойти, а ответ — потеряться
+        try { const st = await apiOnce('/api/status'); if (st && st.Job && st.Job.Id > prevId) return { Ok: true, Job: st.Job }; } catch (e2) { }
+      }
+      if (path === '/api/shutdown') return { Ok: true };
+    }
+  }
 }
 
 function showTab(id) {
@@ -1898,7 +1916,7 @@ async function jobFinished(j) {
         if (all.length >= 2) { $id('selDiffA').value = all[all.length - 2].key; $id('selDiffB').value = newest.key; }
         hint.textContent = 'Оценка готова и открыта в плане ниже. Следующий шаг — «Применить рекомендации».';
       } catch (e) { hint.textContent = 'Оценка создана, но не прочитана: ' + e.message; }
-    }
+    } else hint.textContent = j.ExitCode === 0 ? 'Анализ завершён, но новый файл оценки не найден — посмотрите журнал выше.' : 'Анализ завершился с ошибкой (код ' + j.ExitCode + ') — посмотрите журнал выше.';
   } else if (j.Mode === 'Apply') {
     hint.textContent = /-WhatIf|Пробный/i.test(j.Label || '') ? 'Пробный прогон: система не изменялась.'
       : 'Изменения внесены. Перезагрузите ПК, затем «Проанализировать систему» (или замер после входа) и сравните в шаге 4.';
